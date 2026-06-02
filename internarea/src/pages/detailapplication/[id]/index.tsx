@@ -13,7 +13,7 @@ const index = () => {
       try {
         setloading(true);
         const res = await axios.get(
-          `http://localhost:5000/api/application/${id}`
+          `https://internshalaclone-jby6.onrender.com/api/application/${id}`
         );
         console.log(res.data);
         setdata(res.data);

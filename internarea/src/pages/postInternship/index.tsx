@@ -47,7 +47,7 @@ const index = () => {
     }
     try {
       setisloading(true);
-      const res = await axios.post("http://localhost:5000/api/internship", formData);
+      const res = await axios.post("https://internshalaclone-jby6.onrender.com/api/internship", formData);
       toast.success("Internship posted successfuly");
       router.push("/adminpanel");
     } catch (error) {

@@ -125,7 +125,7 @@ const index = () => {
   useEffect(() => {
     const fetchdata = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/job/${id}`);
+        const res = await axios.get(`https://internshalaclone-jby6.onrender.com/api/job/${id}`);
         setjob(res.data);
       } catch (error) {
         console.log(error);
@@ -163,7 +163,7 @@ const index = () => {
         availability,
       };
       await axios.post(
-        "http://localhost:5000/api/application",
+        "https://internshalaclone-jby6.onrender.com/api/application",
         applicationdata
       );
       toast.success("Application submit successfully");

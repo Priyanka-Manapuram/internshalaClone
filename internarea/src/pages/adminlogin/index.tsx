@@ -26,7 +26,7 @@ const index = () => {
     }
     try {
       setisloading(true)
-      const res=await axios.post(`http://localhost:5000/api/admin/adminlogin`,formadata)
+      const res=await axios.post(`https://internshalaclone-jby6.onrender.com/api/admin/adminlogin`,formadata)
       toast.success("Logged in successfully")
       // console.log(res.data);
       router.push("/adminpanel")
