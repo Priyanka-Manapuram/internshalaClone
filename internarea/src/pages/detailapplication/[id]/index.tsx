@@ -7,7 +7,8 @@ const index = () => {
   const router = useRouter();
   const { id } = router.query;
   const [loading, setloading] = useState(false);
-  const [data, setdata] = useState<any>([]);
+  const [data, setdata] = useState<any>(null);  // ← null instead of []
+
   useEffect(() => {
     const fetchdata = async () => {
       try {
@@ -27,6 +28,7 @@ const index = () => {
       fetchdata();
     }
   }, [id]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -37,6 +39,10 @@ const index = () => {
       </div>
     );
   }
+
+  // ← guard: don't render until data is loaded
+  if (!data) return null;
+
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <section key={data._id} className="max-w-6xl mx-auto px-4">
@@ -47,7 +53,7 @@ const index = () => {
               <img
                 alt="Applicant photo"
                 className="w-full h-full object-cover"
-                src={data?.user?. photo}
+                src={data?.user?.photo}  // ← already safe with ?.
               />
               {data.status && (
                 <div
@@ -99,11 +105,13 @@ const index = () => {
                     </span>
                   </div>
                   <p className="text-gray-900 font-semibold">
-                    {new Date(data.createdAt).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
+                    {data.createdAt   // ← guard before calling new Date()
+                      ? new Date(data.createdAt).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })
+                      : "—"}
                   </p>
                 </div>
 
