@@ -7,6 +7,8 @@ import { signInWithPopup, signOut } from 'firebase/auth';
 import { toast } from 'react-toastify';
 import { selectuser } from '@/Feature/Userslice';
 import { useSelector } from 'react-redux';
+import axios from 'axios';
+import router from 'next/router';
 
 interface User {
     name: string;
@@ -18,12 +20,26 @@ const Navbar = () => {
     const user=useSelector(selectuser);
     const handlelogin = async () => {
     try {
-      await signInWithPopup(auth,provider);
-      toast.success("Logged in Successfully");
-    } catch (error) {
-      console.error(error);
-      toast.error("login failed");
+    const result = await signInWithPopup(auth, provider);
+    const u = result.user;
+
+    const res = await axios.post(
+      "https://internshalaclone-jby6.onrender.com/api/auth/record-login",
+      { uid: u.uid, email: u.email, name: u.displayName }
+    );
+
+    if (res.data.requiresOtp) {
+      router.push("/otpVerification"); // Chrome → OTP page
+    } else {
+      toast.success("Logged in successfully");
     }
+  } catch (error: any) {
+    if (error?.response?.status === 403) {
+      toast.error("Mobile login only allowed 10 AM – 1 PM");
+    } else {
+      toast.error("Login failed");
+    }
+  }
     // setuser({
     //   name: "Rahul",
     //   email: "xyz@gmail.com",
