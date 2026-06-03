@@ -13,17 +13,39 @@ import { useRouter } from "next/router";
 
 function AuthListener() {
   const dispatch = useDispatch();
-
   useEffect(() => {
-    // Restore email/password login session first
-    const savedEmailUser = localStorage.getItem("emailUser");
-    if (savedEmailUser) {
-      dispatch(login(JSON.parse(savedEmailUser)));
-    }
+  // Restore email/password login session
+  const savedEmailUser = localStorage.getItem("emailUser");
+  if (savedEmailUser) {
+    dispatch(login(JSON.parse(savedEmailUser)));
+  }
 
+  const unsubscribe = auth.onAuthStateChanged((authuser) => {
+    if (authuser) {
+      // Firebase user — remove email login if any
+      localStorage.removeItem("emailUser");
+      dispatch(
+        login({
+          uid: authuser.uid,
+          photo: authuser.photoURL,
+          name: authuser.displayName,
+          email: authuser.email,
+          phoneNumber: authuser.phoneNumber,
+        })
+      );
+    } else {
+      // No Firebase session — check email login
+      const emailUser = localStorage.getItem("emailUser");
+      if (!emailUser) {
+        dispatch(logout());
+      }
+    }
+  });
+  return () => unsubscribe();
+}, [dispatch]);
+  useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((authuser) => {
       if (authuser) {
-        localStorage.removeItem("emailUser");
         dispatch(
           login({
             uid: authuser.uid,
@@ -34,13 +56,9 @@ function AuthListener() {
           })
         );
       } else {
-        const emailUser = localStorage.getItem("emailUser");
-        if (!emailUser) {
-          dispatch(logout());
-        }
+        dispatch(logout());
       }
     });
-
     return () => unsubscribe();
   }, [dispatch]);
 
@@ -55,6 +73,7 @@ function OtpGuard({ children }: { children: React.ReactNode }) {
     const otpPending = sessionStorage.getItem("otpPending") === "true";
     const currentPath = window.location.pathname;
 
+    // If OTP pending and not on OTP page → redirect
     if (otpPending && currentPath !== "/otpVerification") {
       router.push("/otpVerification");
     }
@@ -62,6 +81,7 @@ function OtpGuard({ children }: { children: React.ReactNode }) {
     setchecked(true);
   }, []);
 
+  // Wait until we've checked before rendering anything
   if (!checked) return null;
 
   const otpPending =
