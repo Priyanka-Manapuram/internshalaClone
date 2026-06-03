@@ -49,34 +49,34 @@ const Navbar = () => {
     }
   };
 
-const handleEmailLogin = async () => {
-  if (!emailInput || !passwordInput) {
-    toast.error("Please enter email and password.");
-    return;
-  }
-  try {
-    const res = await axios.post(
-      "https://internshalaclone-jby6.onrender.com/api/auth/email-login",
-      { email: emailInput, password: passwordInput }
-    );
+  const handleEmailLogin = async () => {
+    if (!emailInput || !passwordInput) {
+      toast.error("Please enter email and password.");
+      return;
+    }
+    try {
+      const res = await axios.post(
+        "https://internshalaclone-jby6.onrender.com/api/auth/email-login",
+        { email: emailInput, password: passwordInput }
+      );
 
-    const userData = {
-      uid: res.data.uid,        // ← use uid from backend
-      photo: null,
-      name: res.data.name,      // ← use name from backend
-      email: res.data.email,
-      phoneNumber: null,
-    };
+      const userData = {
+        uid: res.data.uid,        // ← use uid from backend
+        photo: null,
+        name: res.data.name,      // ← use name from backend
+        email: res.data.email,
+        phoneNumber: null,
+      };
 
-    toast.success("Logged in successfully!");
-    setshowEmailLogin(false);
-    dispatch(login(userData));
-    localStorage.setItem("emailUser", JSON.stringify(userData));
+      toast.success("Logged in successfully!");
+      setshowEmailLogin(false);
+      dispatch(login(userData));
+      localStorage.setItem("emailUser", JSON.stringify(userData));
 
-  } catch (error: any) {
-    toast.error(error?.response?.data?.message || "Login failed.");
-  }
-};
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Login failed.");
+    }
+  };
 
   const handlelogout = () => {
     signOut(auth);
@@ -123,11 +123,18 @@ const handleEmailLogin = async () => {
           {!otpPending && (
             <div className="flex items-center space-x-4 relative">
               {user ? (
-                <div className="relative flex">
+                // ✅ Logged-in UI — user is guaranteed to exist here
+                <div className="relative flex items-center gap-2">
+                  <Link
+                    href="/subscription"
+                    className="text-sm text-blue-600 font-medium hover:underline"
+                  >
+                    Plans
+                  </Link>
                   <button className="flex items-center space-x-2">
                     <Link href={"/profile"}>
                       <img
-                        src={user.photo || `https://ui-avatars.com/api/?name=${user.name}&background=3b82f6&color=fff`}
+                        src={user?.photo || `https://ui-avatars.com/api/?name=${user?.name}&background=3b82f6&color=fff`}
                         alt="profile"
                         className="w-8 h-8 rounded-full"
                       />
@@ -141,6 +148,7 @@ const handleEmailLogin = async () => {
                   </button>
                 </div>
               ) : (
+                // ✅ Logged-out UI — no user access here
                 <>
                   {/* Google Login */}
                   <button
@@ -208,31 +216,8 @@ const handleEmailLogin = async () => {
                         </div>
                       </div>
                     )}
-                    <div className="relative flex items-center gap-2">
-    <Link
-      href="/subscription"
-      className="text-sm text-blue-600 font-medium hover:underline"
-    >
-      Plans
-    </Link>
-    <button className="flex items-center space-x-2">
-      <Link href={"/profile"}>
-        <img
-          src={user.photo || `https://ui-avatars.com/api/?name=${user.name}&background=3b82f6&color=fff`}
-          alt="profile"
-          className="w-8 h-8 rounded-full"
-        />
-      </Link>
-    </button>
-    <button
-      className="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg"
-      onClick={handlelogout}
-    >
-      Logout
-    </button>
-    </div>
                   </div>
-                  
+
                   <a href="/adminlogin" className="text-gray-600 hover:text-gray-800">
                     Admin
                   </a>
