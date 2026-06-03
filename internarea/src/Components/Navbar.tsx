@@ -123,7 +123,13 @@ const handleEmailLogin = async () => {
           {!otpPending && (
             <div className="flex items-center space-x-4 relative">
               {user ? (
-                <div className="relative flex">
+                <div className="relative flex items-center gap-2">
+                  <Link
+                    href="/subscription"
+                    className="text-sm text-blue-600 font-medium hover:underline"
+                  >
+                    Plans
+                  </Link>
                   <button className="flex items-center space-x-2">
                     <Link href={"/profile"}>
                       <img

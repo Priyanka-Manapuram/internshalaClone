@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
+
 const Applicationipschema = new mongoose.Schema({
+  uid: { type: String, default: null },
   company: String,
   category: String,
   coverLetter: String,
@@ -15,4 +17,5 @@ const Applicationipschema = new mongoose.Schema({
   },
   Application: Object,
 });
+
 module.exports = mongoose.model("Application", Applicationipschema);
