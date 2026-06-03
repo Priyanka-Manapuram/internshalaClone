@@ -33,22 +33,19 @@ router.post("/record-login", mobileTimeRestriction, async (req, res) => {
     const { browser, os, device } = parseUserAgent(ua);
     const ipAddress = getIp(req);
 
+    // Save login history
     await LoginHistory.create({
-      uid,
-      email,
-      name: name || "",
-      ipAddress,
-      browser,
-      os,
-      device,
+      uid, email, name: name || "",
+      ipAddress, browser, os, device,
       status: "success",
     });
-    // Save/update user record with Firebase uid
-await User.findOneAndUpdate(
-  { email },
-  { email, firebaseUid: uid, name: name || "" },
-  { upsert: true, new: true }
-);
+
+    // Save firebaseUid to User collection so email login can find it later
+    await User.findOneAndUpdate(
+      { email },
+      { email, firebaseUid: uid, name: name || "" },
+      { upsert: true, new: true }
+    );
 
     if (device === "Chrome") {
       const otp = generateOtp();
@@ -124,11 +121,11 @@ router.post("/email-login", async (req, res) => {
     if (!isMatch)
       return res.status(400).json({ success: false, message: "Invalid password." });
 
-    // Return the stored uid so frontend uses correct Firebase uid
+    // Return firebaseUid so login history works correctly
     return res.status(200).json({
       success: true,
       message: "Login successful.",
-      uid: user.firebaseUid || email,  // ← return uid
+      uid: user.firebaseUid || email,
       name: user.name || email.split("@")[0],
       email: user.email,
     });
@@ -138,7 +135,7 @@ router.post("/email-login", async (req, res) => {
   }
 });
 
-// ─── POST /api/auth/forgot-password ─────────────────────────────────────────
+// ─── POST /api/auth/forgot-password ──────────────────────────────────────────
 router.post("/forgot-password", async (req, res) => {
   try {
     const { email } = req.body;
@@ -164,11 +161,7 @@ router.post("/forgot-password", async (req, res) => {
 
     await User.findOneAndUpdate(
       { email },
-      {
-        email,
-        password: hashed,
-        lastPasswordReset: new Date(),
-      },
+      { email, password: hashed, lastPasswordReset: new Date() },
       { upsert: true, new: true }
     );
 
@@ -180,6 +173,20 @@ router.post("/forgot-password", async (req, res) => {
     });
   } catch (error) {
     console.error("forgot-password error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// ─── GET /api/auth/login-history/:uid ────────────────────────────────────────
+router.get("/login-history/:uid", async (req, res) => {
+  try {
+    const { uid } = req.params;
+    const history = await LoginHistory.find({ uid })
+      .sort({ loginTime: -1 })
+      .limit(50);
+    return res.status(200).json({ success: true, history });
+  } catch (error) {
+    console.error("login-history error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 });
