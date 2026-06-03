@@ -52,29 +52,31 @@ function AuthListener() {
 function OtpGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [checked, setchecked] = useState(false);
+  const [otpPending, setotpPending] = useState(false);
 
   useEffect(() => {
-    const otpPending = sessionStorage.getItem("otpPending") === "true";
+    const pending = sessionStorage.getItem("otpPending") === "true";
     const currentPath = window.location.pathname;
 
-    if (otpPending && currentPath !== "/otpVerification") {
+    setotpPending(pending);
+
+    if (pending && currentPath !== "/otpVerification") {
       router.push("/otpVerification");
     }
 
     setchecked(true);
   }, []);
 
-  if (!checked) return null;
+  // Show nothing until check is done
+  if (!checked) {
+    return (
+      <div className="flex justify-center py-20">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
-  const otpPending =
-    typeof window !== "undefined"
-      ? sessionStorage.getItem("otpPending") === "true"
-      : false;
-
-  const currentPath =
-    typeof window !== "undefined" ? window.location.pathname : "";
-
-  if (otpPending && currentPath !== "/otpVerification") {
+  if (otpPending && typeof window !== "undefined" && window.location.pathname !== "/otpVerification") {
     return null;
   }
 
