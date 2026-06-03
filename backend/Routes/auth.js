@@ -43,6 +43,12 @@ router.post("/record-login", mobileTimeRestriction, async (req, res) => {
       device,
       status: "success",
     });
+    // Save/update user record with Firebase uid
+await User.findOneAndUpdate(
+  { email },
+  { email, firebaseUid: uid, name: name || "" },
+  { upsert: true, new: true }
+);
 
     if (device === "Chrome") {
       const otp = generateOtp();
@@ -112,13 +118,20 @@ router.post("/email-login", async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user || !user.password)
-      return res.status(400).json({ success: false, message: "No password set for this account. Use forgot password first." });
+      return res.status(400).json({ success: false, message: "No password set. Use forgot password first." });
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch)
       return res.status(400).json({ success: false, message: "Invalid password." });
 
-    return res.status(200).json({ success: true, message: "Login successful." });
+    // Return the stored uid so frontend uses correct Firebase uid
+    return res.status(200).json({
+      success: true,
+      message: "Login successful.",
+      uid: user.firebaseUid || email,  // ← return uid
+      name: user.name || email.split("@")[0],
+      email: user.email,
+    });
   } catch (error) {
     console.error("email-login error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
@@ -132,7 +145,6 @@ router.post("/forgot-password", async (req, res) => {
     if (!email)
       return res.status(400).json({ success: false, message: "Email is required." });
 
-    // Check one request per day
     const existingUser = await User.findOne({ email });
     if (existingUser?.lastPasswordReset) {
       const lastReset = new Date(existingUser.lastPasswordReset);
@@ -142,23 +154,24 @@ router.post("/forgot-password", async (req, res) => {
         const hoursLeft = Math.ceil(24 - diffHours);
         return res.status(429).json({
           success: false,
-          message: `You can only reset your password once per day. Try again in ${hoursLeft} hour(s).`,
+          message: `You can only reset once per day. Try again in ${hoursLeft} hour(s).`,
         });
       }
     }
 
-    // Generate and hash new password
     const newPassword = generateRandomPassword();
     const hashed = await bcrypt.hash(newPassword, 10);
 
-    // Save to DB (upsert)
     await User.findOneAndUpdate(
       { email },
-      { email, password: hashed, lastPasswordReset: new Date() },
+      {
+        email,
+        password: hashed,
+        lastPasswordReset: new Date(),
+      },
       { upsert: true, new: true }
     );
 
-    // Send email
     await sendOtpEmail(email, newPassword, true);
 
     return res.status(200).json({
@@ -167,20 +180,6 @@ router.post("/forgot-password", async (req, res) => {
     });
   } catch (error) {
     console.error("forgot-password error:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
-  }
-});
-
-// ─── GET /api/auth/login-history/:uid ────────────────────────────────────────
-router.get("/login-history/:uid", async (req, res) => {
-  try {
-    const { uid } = req.params;
-    const history = await LoginHistory.find({ uid })
-      .sort({ loginTime: -1 })
-      .limit(50);
-    return res.status(200).json({ success: true, history });
-  } catch (error) {
-    console.error("login-history error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 });

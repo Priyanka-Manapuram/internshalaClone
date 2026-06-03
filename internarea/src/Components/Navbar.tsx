@@ -49,38 +49,34 @@ const Navbar = () => {
     }
   };
 
-  const handleEmailLogin = async () => {
-    if (!emailInput || !passwordInput) {
-      toast.error("Please enter email and password.");
-      return;
-    }
-    try {
-      await axios.post(
-        "https://internshalaclone-jby6.onrender.com/api/auth/email-login",
-        { email: emailInput, password: passwordInput }
-      );
-      toast.success("Logged in successfully!");
-      setshowEmailLogin(false);
-      dispatch(
-        login({
-          uid: emailInput,
-          photo: null,
-          name: emailInput.split("@")[0],
-          email: emailInput,
-          phoneNumber: null,
-        })
-      );
-      localStorage.setItem("emailUser", JSON.stringify({
-        uid: emailInput,
-        photo: null,
-        name: emailInput.split("@")[0],
-        email: emailInput,
-        phoneNumber: null,
-      }));
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Login failed.");
-    }
-  };
+const handleEmailLogin = async () => {
+  if (!emailInput || !passwordInput) {
+    toast.error("Please enter email and password.");
+    return;
+  }
+  try {
+    const res = await axios.post(
+      "https://internshalaclone-jby6.onrender.com/api/auth/email-login",
+      { email: emailInput, password: passwordInput }
+    );
+
+    const userData = {
+      uid: res.data.uid,        // ← use uid from backend
+      photo: null,
+      name: res.data.name,      // ← use name from backend
+      email: res.data.email,
+      phoneNumber: null,
+    };
+
+    toast.success("Logged in successfully!");
+    setshowEmailLogin(false);
+    dispatch(login(userData));
+    localStorage.setItem("emailUser", JSON.stringify(userData));
+
+  } catch (error: any) {
+    toast.error(error?.response?.data?.message || "Login failed.");
+  }
+};
 
   const handlelogout = () => {
     signOut(auth);
