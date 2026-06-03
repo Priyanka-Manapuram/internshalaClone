@@ -26,7 +26,7 @@ const index = () => {
             <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2">
               {user?.photo ? (
                 <img
-                  src={user?.photo}
+                  src={user?.photo || `https://ui-avatars.com/api/?name=${user?.name}&background=3b82f6&color=fff`}
                   alt={user?.name}
                   className="w-24 h-24 rounded-full border-4 border-white shadow-lg"
                 />

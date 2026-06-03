@@ -64,15 +64,25 @@ const Navbar = () => {
           email: emailInput,
           phoneNumber: null,
         })
-      );
+        );
+localStorage.setItem("emailUser", JSON.stringify({
+  uid: emailInput,
+  photo: null,
+  name: emailInput.split("@")[0],
+  email: emailInput,
+  phoneNumber: null,
+}));
+      
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Login failed.");
     }
   };
 
   const handlelogout = () => {
-    signOut(auth);
-  };
+  signOut(auth);
+  localStorage.removeItem("emailUser");  // ← add this
+  dispatch(logout());                     // ← add this
+};
 
   return (
     <nav className="bg-white shadow-md">
@@ -114,7 +124,7 @@ const Navbar = () => {
                 <button className="flex items-center space-x-2">
                   <Link href={"/profile"}>
                     <img
-                      src={user.photo || "/default-user.png"}
+                      src={user.photo || `https://ui-avatars.com/api/?name=${user.name}&background=3b82f6&color=fff`}
                       alt="profile"
                       className="w-8 h-8 rounded-full"
                     />
