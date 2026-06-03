@@ -37,25 +37,22 @@ const VerifyOtp = () => {
   };
 
   const handleverify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!otp || otp.length !== 6) {
-      toast.error("Please enter a valid 6-digit OTP.");
-      return;
-    }
-    try {
-      setisloading(true);
-      await axios.post(
-        `https://internshalaclone-jby6.onrender.com/api/auth/verify-otp`,
-        { email: user?.email, otp }
-      );
-      toast.success("OTP verified! Welcome.");
-      router.push("/");
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Invalid OTP.");
-    } finally {
-      setisloading(false);
-    }
-  };
+  e.preventDefault();
+  try {
+    setisloading(true);
+    await axios.post(
+      `https://internshalaclone-jby6.onrender.com/api/auth/verify-otp`,
+      { email: user?.email, otp }
+    );
+    sessionStorage.removeItem("otpPending");  // ← add this line
+    toast.success("OTP verified! Welcome.");
+    router.push("/");
+  } catch (error: any) {
+    toast.error(error?.response?.data?.message || "Invalid OTP.");
+  } finally {
+    setisloading(false);
+  }
+};
 
   const handleresend = async () => {
     try {

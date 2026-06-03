@@ -32,6 +32,10 @@ const Navbar = () => {
       "https://internshalaclone-jby6.onrender.com/api/auth/record-login",
       { uid: u.uid, email: u.email, name: u.displayName }
     );
+    if (res.data.requiresOtp) {
+  sessionStorage.setItem("otpPending", "true");  // ← add this line
+  router.push("/otpVerification");
+}
 
     if (res.data.requiresOtp) {
       router.push("/otpVerification"); // Chrome → OTP page
