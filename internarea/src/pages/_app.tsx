@@ -56,25 +56,18 @@ function OtpGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const pending = sessionStorage.getItem("otpPending") === "true";
-    const currentPath = window.location.pathname;
-
     setotpPending(pending);
 
-    if (pending && currentPath !== "/otpVerification") {
+    if (pending && window.location.pathname !== "/otpVerification") {
       router.push("/otpVerification");
     }
 
     setchecked(true);
   }, []);
 
-  // Show nothing until check is done
-  if (!checked) {
-    return (
-      <div className="flex justify-center py-20">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  // Always render children — let each page handle its own auth
+  // Only block if OTP is pending
+  if (!checked) return <>{children}</>;
 
   if (otpPending && typeof window !== "undefined" && window.location.pathname !== "/otpVerification") {
     return null;

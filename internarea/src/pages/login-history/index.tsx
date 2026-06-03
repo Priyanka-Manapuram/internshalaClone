@@ -1,9 +1,7 @@
 import axios from "axios";
 import { Monitor, Smartphone, Clock, MapPin } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
-import { selectuser } from "@/Feature/Userslice";
 import { auth } from "@/firebase/firebase";
 
 interface LoginRecord {
@@ -21,20 +19,27 @@ interface LoginRecord {
 
 const LoginHistory = () => {
   const router = useRouter();
-  const user = useSelector(selectuser);
   const [history, sethistory] = useState<LoginRecord[]>([]);
   const [isloading, setisloading] = useState(true);
 
   useEffect(() => {
-    // Wait for Firebase to restore session before checking
-    const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
-      if (!firebaseUser) {
-        router.push("/");
-      } else {
-        fetchHistory(firebaseUser.uid);
-      }
-    });
-    return () => unsubscribe();
+    // Small delay to let _app.tsx finish auth check first
+    const timer = setTimeout(() => {
+      const emailUser = localStorage.getItem("emailUser");
+
+      auth.onAuthStateChanged((firebaseUser) => {
+        if (firebaseUser) {
+          fetchHistory(firebaseUser.uid);
+        } else if (emailUser) {
+          const parsed = JSON.parse(emailUser);
+          fetchHistory(parsed.uid);
+        } else {
+          router.push("/");
+        }
+      });
+    }, 500); // wait 500ms for auth to settle
+
+    return () => clearTimeout(timer);
   }, []);
 
   const fetchHistory = async (uid: string) => {
@@ -129,13 +134,11 @@ const LoginHistory = () => {
                 </div>
 
                 <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      record.status === "success"
-                        ? "bg-green-100 text-green-600"
-                        : "bg-red-100 text-red-600"
-                    }`}
-                  >
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    record.status === "success"
+                      ? "bg-green-100 text-green-600"
+                      : "bg-red-100 text-red-600"
+                  }`}>
                     {record.status === "success" ? "✓ Success" : "✗ Blocked"}
                   </span>
                   <span className="text-xs text-gray-400">{record.device}</span>
