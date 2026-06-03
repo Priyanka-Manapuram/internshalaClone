@@ -127,7 +127,7 @@ const Navbar = () => {
                 <div className="relative flex items-center gap-2">
                   <Link
                     href="/subscription"
-                    className="text-sm text-blue-600 font-medium hover:underline"
+                    className="text-sm font-medium px-4 py-2 rounded-lg border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors duration-200"
                   >
                     Plans
                   </Link>
