@@ -8,7 +8,7 @@ async function sendOtpEmail(to, otp) {
   await axios.post(
     "https://api.brevo.com/v3/smtp/email",
     {
-      sender: { name: "Internarea", email: "noreply@internarea.com" },
+      sender: { name: "Internarea", email: "priyankamanapuram08@gmail.com" },
       to: [{ email: to }],
       subject: "Your Internarea Login OTP",
       htmlContent: `
