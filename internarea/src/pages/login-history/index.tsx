@@ -1,10 +1,9 @@
 import axios from "axios";
-import { Monitor, Smartphone, Globe, Clock, MapPin } from "lucide-react";
+import { Monitor, Smartphone, Clock, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { selectuser } from "@/Feature/Userslice";
-
 import { auth } from "@/firebase/firebase";
 
 interface LoginRecord {
@@ -26,25 +25,23 @@ const LoginHistory = () => {
   const [history, sethistory] = useState<LoginRecord[]>([]);
   const [isloading, setisloading] = useState(true);
 
-  const [authChecked, setAuthChecked] = useState(false);
+  useEffect(() => {
+    // Wait for Firebase to restore session before checking
+    const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
+      if (!firebaseUser) {
+        router.push("/");
+      } else {
+        fetchHistory(firebaseUser.uid);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
-useEffect(() => {
-  const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
-    setAuthChecked(true);
-    if (!firebaseUser) {
-      router.push("/");
-    } else {
-      fetchHistory();
-    }
-  });
-  return () => unsubscribe();
-}, []);
-
-  const fetchHistory = async () => {
+  const fetchHistory = async (uid: string) => {
     try {
       setisloading(true);
       const res = await axios.get(
-        `https://internshalaclone-jby6.onrender.com/api/auth/login-history/${user?.uid}`
+        `https://internshalaclone-jby6.onrender.com/api/auth/login-history/${uid}`
       );
       sethistory(res.data.history || []);
     } catch (error) {
@@ -99,7 +96,6 @@ useEffect(() => {
                 key={record._id}
                 className="bg-white rounded-lg shadow-sm border border-gray-100 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
               >
-                {/* Left: device icon + device info */}
                 <div className="flex items-start gap-4">
                   <div className="mt-1">
                     <DeviceIcon device={record.device} />
@@ -132,7 +128,6 @@ useEffect(() => {
                   </div>
                 </div>
 
-                {/* Right: status + device badge */}
                 <div className="flex flex-col items-end gap-1 shrink-0">
                   <span
                     className={`text-xs px-2 py-0.5 rounded-full font-medium ${

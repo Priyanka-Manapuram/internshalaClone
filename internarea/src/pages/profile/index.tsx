@@ -79,6 +79,23 @@ const index = () => {
                   <ExternalLink className="ml-2 h-4 w-4" />
                 </Link>
               </div>
+              <div className="flex flex-col items-center gap-3 pt-4">
+  <Link
+    href="/userapplication"
+    className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200"
+  >
+    View Applications
+    <ExternalLink className="ml-2 h-4 w-4" />
+  </Link>
+
+  <Link
+    href="/login-history"
+    className="inline-flex items-center px-6 py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors duration-200"
+  >
+    View Login History
+    <ExternalLink className="ml-2 h-4 w-4" />
+  </Link>
+</div>
        </div>
      </div>
     </div>
