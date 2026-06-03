@@ -1,33 +1,21 @@
-const nodemailer = require("nodemailer");
-require("dotenv").config();
+const SibApiV3Sdk = require("@getbrevo/brevo");
 
-/**
- * Generates a 6-digit numeric OTP.
- */
 function generateOtp() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-/**
- * Sends an OTP email to the given address.
- * Uses Gmail SMTP — set EMAIL_USER and EMAIL_PASS in .env
- */
 async function sendOtpEmail(to, otp) {
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS, // Gmail App Password (not your real password)
-    },
-  });
+  const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+  
+  apiInstance.authentications["apiKey"].apiKey = process.env.BREVO_API_KEY;
 
-  const mailOptions = {
-    from: `"Internarea Security" <${process.env.EMAIL_USER}>`,
-    to,
+  const sendSmtpEmail = {
+    sender: { name: "Internarea", email: "noreply@internarea.com" },
+    to: [{ email: to }],
     subject: "Your Internarea Login OTP",
-    html: `
+    htmlContent: `
       <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;border:1px solid #e5e7eb;border-radius:8px;padding:32px;">
-        <h2 style="color:#2563eb;margin-bottom:8px;">Login Verification</h2>
+        <h2 style="color:#2563eb;">Login Verification</h2>
         <p style="color:#374151;">Use the OTP below to complete your login. It expires in <strong>5 minutes</strong>.</p>
         <div style="background:#f3f4f6;border-radius:8px;padding:24px;text-align:center;margin:24px 0;">
           <span style="font-size:36px;font-weight:bold;letter-spacing:12px;color:#111827;">${otp}</span>
@@ -37,7 +25,7 @@ async function sendOtpEmail(to, otp) {
     `,
   };
 
-  await transporter.sendMail(mailOptions);
+  await apiInstance.sendTransacEmail(sendSmtpEmail);
 }
 
 module.exports = { generateOtp, sendOtpEmail };
