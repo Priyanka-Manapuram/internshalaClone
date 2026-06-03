@@ -123,13 +123,7 @@ const handleEmailLogin = async () => {
           {!otpPending && (
             <div className="flex items-center space-x-4 relative">
               {user ? (
-                <div className="relative flex items-center gap-2">
-                  <Link
-                    href="/subscription"
-                    className="text-sm text-blue-600 font-medium hover:underline"
-                  >
-                    Plans
-                  </Link>
+                <div className="relative flex">
                   <button className="flex items-center space-x-2">
                     <Link href={"/profile"}>
                       <img
@@ -214,8 +208,31 @@ const handleEmailLogin = async () => {
                         </div>
                       </div>
                     )}
+                    <div className="relative flex items-center gap-2">
+    <Link
+      href="/subscription"
+      className="text-sm text-blue-600 font-medium hover:underline"
+    >
+      Plans
+    </Link>
+    <button className="flex items-center space-x-2">
+      <Link href={"/profile"}>
+        <img
+          src={user.photo || `https://ui-avatars.com/api/?name=${user.name}&background=3b82f6&color=fff`}
+          alt="profile"
+          className="w-8 h-8 rounded-full"
+        />
+      </Link>
+    </button>
+    <button
+      className="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg"
+      onClick={handlelogout}
+    >
+      Logout
+    </button>
+    </div>
                   </div>
-
+                  
                   <a href="/adminlogin" className="text-gray-600 hover:text-gray-800">
                     Admin
                   </a>
