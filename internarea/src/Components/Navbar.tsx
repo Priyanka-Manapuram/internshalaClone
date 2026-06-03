@@ -10,6 +10,8 @@ import { useSelector } from 'react-redux';
 import axios from 'axios';
 import router from 'next/router';
 
+import { useRouter } from 'next/router'; //added
+
 interface User {
     name: string;
     email: string;
@@ -18,6 +20,9 @@ interface User {
 
 const Navbar = () => {
     const user=useSelector(selectuser);
+
+    const router = useRouter(); //added
+
     const handlelogin = async () => {
     try {
     const result = await signInWithPopup(auth, provider);

@@ -5,6 +5,8 @@ import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { selectuser } from "@/Feature/Userslice";
 
+import { auth } from "@/firebase/firebase";
+
 interface LoginRecord {
   _id: string;
   uid: string;
@@ -24,13 +26,19 @@ const LoginHistory = () => {
   const [history, sethistory] = useState<LoginRecord[]>([]);
   const [isloading, setisloading] = useState(true);
 
-  useEffect(() => {
-    if (!user) {
+  const [authChecked, setAuthChecked] = useState(false);
+
+useEffect(() => {
+  const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
+    setAuthChecked(true);
+    if (!firebaseUser) {
       router.push("/");
-      return;
+    } else {
+      fetchHistory();
     }
-    fetchHistory();
-  }, [user, router]);
+  });
+  return () => unsubscribe();
+}, []);
 
   const fetchHistory = async () => {
     try {
