@@ -44,7 +44,7 @@ router.get("/my-plan/:uid", async (req, res) => {
         email: email || "unknown@email.com",  // ← fallback
         name: name || "",
         plan: "Free",
-        applicationLimit: 5,
+        applicationLimit: 1,
         applicationsUsed: 0,
       });
     }
@@ -178,7 +178,7 @@ router.post("/check-limit", async (req, res) => {
         uid,
         email: "",
         plan: "Free",
-        applicationLimit: 5,
+        applicationLimit: 1,
         applicationsUsed: 0,
       });
     }
