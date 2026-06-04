@@ -67,17 +67,18 @@ export default function SubscriptionPage() {
   }, [user]);
 
   const fetchMyPlan = async () => {
-    try {
-      const res = await axios.get(
-        `https://internshalaclone-jby6.onrender.com/api/subscription/my-plan/${user?.uid}`
-      );
-      setcurrentPlan(res.data.subscription);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setloading(false);
-    }
-  };
+  try {
+    const res = await axios.get(
+      `https://internshalaclone-jby6.onrender.com/api/subscription/my-plan/${user?.uid}`,
+      { params: { email: user?.email, name: user?.name } }
+    );
+    setcurrentPlan(res.data.subscription);
+  } catch (error) {
+    console.error(error);
+  } finally {
+    setloading(false);
+  }
+};
 
   const loadRazorpay = () => {
     const script = document.createElement("script");

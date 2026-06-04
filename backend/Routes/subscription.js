@@ -34,13 +34,15 @@ function isPaymentAllowed() {
 router.get("/my-plan/:uid", async (req, res) => {
   try {
     const { uid } = req.params;
+    const { email, name } = req.query;  // ← get from query
+    
     let subscription = await Subscription.findOne({ uid });
 
     if (!subscription) {
-      // Auto-create free plan for new users
       subscription = await Subscription.create({
         uid,
-        email: "",
+        email: email || "unknown@email.com",  // ← fallback
+        name: name || "",
         plan: "Free",
         applicationLimit: 5,
         applicationsUsed: 0,
@@ -76,7 +78,7 @@ router.post("/create-order", async (req, res) => {
     const order = await razorpay.orders.create({
       amount: planDetails.price * 100, // paise
       currency: "INR",
-      receipt: `receipt_${uid}_${Date.now()}`,
+      receipt: `rcpt_${Date.now()}`,
       notes: { uid, email, plan },
     });
 
