@@ -26,7 +26,7 @@ function isPaymentAllowed() {
   const minutes = istTime.getUTCMinutes();
   const totalMinutes = hours * 60 + minutes;
   const start = 10 * 60; // 10:00 AM
-  const end = 11 * 60;   // 11:00 AM
+  const end = 23 * 60 + 59;
   return totalMinutes >= start && totalMinutes < end;
 }
 
