@@ -1,8 +1,8 @@
-import { selectuser } from '@/Feature/Userslice';
-import { ExternalLink, Mail, User } from 'lucide-react';
-import Link from 'next/link';
-import React, { useState } from 'react'
-import { useSelector } from 'react-redux';
+import { selectuser } from "@/Feature/Userslice";
+import { ExternalLink, Mail, User } from "lucide-react";
+import Link from "next/link";
+import React, { useState } from "react";
+import { useSelector } from "react-redux";
 
 interface User {
   name: string;
@@ -16,7 +16,7 @@ const index = () => {
   //   photo:
   //     "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=64&h=64&fit=crop&crop=faces",
   // });
-  const user=useSelector(selectuser);
+  const user = useSelector(selectuser);
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -26,7 +26,10 @@ const index = () => {
             <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2">
               {user?.photo ? (
                 <img
-                  src={user?.photo || `https://ui-avatars.com/api/?name=${user?.name}&background=3b82f6&color=fff`}
+                  src={
+                    user?.photo ||
+                    `https://ui-avatars.com/api/?name=${user?.name}&background=3b82f6&color=fff`
+                  }
                   alt={user?.name}
                   className="w-24 h-24 rounded-full border-4 border-white shadow-lg"
                 />
@@ -35,9 +38,9 @@ const index = () => {
                   <User className="h-12 w-12 text-gray-400" />
                 </div>
               )}
+            </div>
           </div>
-        </div>
-        {/* Profile Content */}
+          {/* Profile Content */}
           <div className="pt-16 pb-8 px-6">
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold text-gray-900">{user?.name}</h1>
@@ -70,7 +73,7 @@ const index = () => {
               </div>
 
               {/* Actions */}
-              <div className="flex justify-center pt-4">
+              <div className="flex flex-col items-center gap-3 pt-4">
                 <Link
                   href="/userapplication"
                   className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200"
@@ -78,22 +81,27 @@ const index = () => {
                   View Applications
                   <ExternalLink className="ml-2 h-4 w-4" />
                 </Link>
-              </div>
-              <div className="flex flex-col items-center gap-3 pt-4">
+                <Link
+                  href="/resume"
+                  className="inline-flex items-center px-6 py-3 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors duration-200"
+                >
+                  Resume Builder
+                  <ExternalLink className="ml-2 h-4 w-4" />
+                </Link>
                 <Link
                   href="/login-history"
                   className="inline-flex items-center px-6 py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors duration-200"
                 >
-                    View Login History
+                  View Login History
                   <ExternalLink className="ml-2 h-4 w-4" />
                 </Link>
               </div>
-       </div>
-     </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    </div>
-    </div>
-  )
+  );
 };
 
-export default index
+export default index;
