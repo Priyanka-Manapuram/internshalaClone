@@ -145,34 +145,64 @@ const index = () => {
     );
   }
   const handlesubmitapplication = async () => {
-    if (!coverLetter.trim()) {
-      toast.error("please write a cover letter");
-      return;
-    }
-    if (!availability) {
-      toast.error("please select your availability");
-      return;
-    }
-    try {
-      const applicationdata = {
-        category: jobdata.category,
-        company: jobdata.company,
-        coverLetter: coverLetter,
-        user: user,
-        Application: id,
-        availability,
-      };
-      await axios.post(
-        "https://internshalaclone-jby6.onrender.com/api/application",
-        applicationdata
+  if (!coverLetter.trim()) {
+    toast.error("please write a cover letter");
+    return;
+  }
+  if (!availability) {
+    toast.error("please select your availability");
+    return;
+  }
+
+  if (!user) {
+    toast.error("Please login first");
+    return;
+  }
+
+  try {
+    // Step 1 — check limit before applying
+    const limitRes = await axios.post(
+      "https://internshalaclone-jby6.onrender.com/api/subscription/check-limit",
+      { uid: user.uid }
+    );
+
+    if (!limitRes.data.canApply) {
+      toast.error(
+        `You have used all ${limitRes.data.applicationLimit} applications on your ${limitRes.data.plan} plan. Please upgrade your plan.`,
+        { autoClose: 5000 }
       );
-      toast.success("Application submit successfully");
-      router.push("/job");
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to submit application");
+      router.push("/subscription");
+      return;
     }
-  };
+
+    // Step 2 — submit application
+    const applicationdata = {
+      uid: user.uid,
+      category: jobdata.category,
+      company: jobdata.company,
+      coverLetter: coverLetter,
+      user: user,
+      Application: id,
+      availability,
+    };
+    await axios.post(
+      "https://internshalaclone-jby6.onrender.com/api/application",
+      applicationdata
+    );
+
+    // Step 3 — increment usage
+    await axios.post(
+      "https://internshalaclone-jby6.onrender.com/api/subscription/increment-usage",
+      { uid: user.uid }
+    );
+
+    toast.success("Application submitted successfully");
+    router.push("/job");
+  } catch (error) {
+    console.error(error);
+    toast.error("Failed to submit application");
+  }
+};
     return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">

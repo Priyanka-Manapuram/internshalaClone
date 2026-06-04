@@ -12,10 +12,10 @@ const razorpay = new Razorpay({
 });
 
 const PLANS = {
-  Free:   { price: 0,   limit: 5,         label: "Free" },
-  Bronze: { price: 99,  limit: 25,        label: "Bronze" },
-  Silver: { price: 299, limit: 75,        label: "Silver" },
-  Gold:   { price: 599, limit: 999999,    label: "Gold" },
+  Free:   { price: 0,    limit: 1,      label: "Free" },
+  Bronze: { price: 100,  limit: 3,      label: "Bronze" },
+  Silver: { price: 300,  limit: 5,      label: "Silver" },
+  Gold:   { price: 1000, limit: 999999, label: "Gold" },
 };
 
 function isPaymentAllowed() {
@@ -26,7 +26,7 @@ function isPaymentAllowed() {
   const minutes = istTime.getUTCMinutes();
   const totalMinutes = hours * 60 + minutes;
   const start = 10 * 60; // 10:00 AM
-  const end = 23 * 60 + 59; // 11:59 PM
+  const end = 11 * 60;   // 11:00 AM
   return totalMinutes >= start && totalMinutes < end;
 }
 
