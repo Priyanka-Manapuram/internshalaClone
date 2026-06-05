@@ -14,11 +14,21 @@ import { LanguageProvider } from "@/context/LanguageContext";
 
 function AuthListener() {
   const dispatch = useDispatch();
+
   useEffect(() => {
+    // Keep Render awake every 14 minutes
+    const keepAlive = () => {
+      fetch("https://internshalaclone-jby6.onrender.com/").catch(() => {});
+    };
+    keepAlive();
+    const interval = setInterval(keepAlive, 14 * 60 * 1000);
+
+    // Restore email/password login session
     const savedEmailUser = localStorage.getItem("emailUser");
     if (savedEmailUser) {
       dispatch(login(JSON.parse(savedEmailUser)));
     }
+
     const unsubscribe = auth.onAuthStateChanged((authuser) => {
       if (authuser) {
         localStorage.removeItem("emailUser");
@@ -29,7 +39,7 @@ function AuthListener() {
             name: authuser.displayName,
             email: authuser.email,
             phoneNumber: authuser.phoneNumber,
-          }),
+          })
         );
       } else {
         const emailUser = localStorage.getItem("emailUser");
@@ -38,8 +48,13 @@ function AuthListener() {
         }
       }
     });
-    return () => unsubscribe();
+
+    return () => {
+      clearInterval(interval);
+      unsubscribe();
+    };
   }, [dispatch]);
+
   return null;
 }
 
@@ -69,6 +84,14 @@ function OtpGuard({ children }: { children: React.ReactNode }) {
 }
 
 export default function App({ Component, pageProps }: AppProps) {
+  const [backendReady, setbackendReady] = useState(false);
+
+  useEffect(() => {
+    fetch("https://internshalaclone-jby6.onrender.com/")
+      .then(() => setbackendReady(true))
+      .catch(() => setbackendReady(true));
+  }, []);
+
   return (
     <Provider store={store}>
       <LanguageProvider>
@@ -76,9 +99,16 @@ export default function App({ Component, pageProps }: AppProps) {
         <div className="bg-white">
           <ToastContainer />
           <Navbar />
-          <OtpGuard>
-            <Component {...pageProps} />
-          </OtpGuard>
+          {!backendReady ? (
+            <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+              <p className="text-gray-500 text-sm">Loading Internarea...</p>
+            </div>
+          ) : (
+            <OtpGuard>
+              <Component {...pageProps} />
+            </OtpGuard>
+          )}
           <Footer />
         </div>
       </LanguageProvider>
