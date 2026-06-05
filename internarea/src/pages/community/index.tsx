@@ -5,9 +5,9 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import {
   Heart, MessageCircle, Share2, Upload, X,
-  UserPlus, UserCheck, Image, Video, Users
+  UserPlus, UserCheck, Users,
 } from "lucide-react";
-import Link from "next/link";
+import { ImageIcon, VideoIcon } from "lucide-react";
 
 const API = "https://internshalaclone-jby6.onrender.com/api";
 
@@ -20,7 +20,14 @@ interface Post {
   mediaUrl: string;
   mediaType: "image" | "video";
   likes: string[];
-  comments: { _id: string; uid: string; name: string; photo: string; text: string; createdAt: string }[];
+  comments: {
+    _id: string;
+    uid: string;
+    name: string;
+    photo: string;
+    text: string;
+    createdAt: string;
+  }[];
   shares: string[];
   sharedFrom: string | null;
   createdAt: string;
@@ -41,10 +48,16 @@ export default function CommunityPage() {
   const [commentText, setcommentText] = useState<{ [key: string]: string }>({});
   const [showComments, setshowComments] = useState<{ [key: string]: boolean }>({});
   const fileRef = useRef<HTMLInputElement>(null);
+  const [activeTab, setactiveTab] = useState<"feed" | "people">("feed");
+  const [allUsers, setallUsers] = useState<any[]>([]);
+  const [usersLoading, setusersLoading] = useState(false);
 
   useEffect(() => {
     fetchFeed();
-    if (user) fetchFriendData();
+    if (user) {
+      fetchFriendData();
+      fetchUsers();
+    }
   }, [user]);
 
   const fetchFeed = async () => {
@@ -69,6 +82,19 @@ export default function CommunityPage() {
     }
   };
 
+  const fetchUsers = async () => {
+    if (!user) return;
+    try {
+      setusersLoading(true);
+      const res = await axios.get(`${API}/friend/users/${user.uid}`);
+      setallUsers(res.data.users || []);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setusersLoading(false);
+    }
+  };
+
   const getPostLimit = (fc: number) => {
     if (fc === 0) return 0;
     if (fc === 1) return 1;
@@ -87,13 +113,8 @@ export default function CommunityPage() {
   const handleCreatePost = async () => {
     if (!user) { toast.error("Please login first."); return; }
     if (!mediaFile) { toast.error("Please select a photo or video."); return; }
-
     const limit = getPostLimit(friendCount);
-    if (limit === 0) {
-      toast.error("You need at least 1 friend to post!");
-      return;
-    }
-
+    if (limit === 0) { toast.error("You need at least 1 friend to post!"); return; }
     try {
       setposting(true);
       const formData = new FormData();
@@ -102,11 +123,9 @@ export default function CommunityPage() {
       formData.append("name", user.name || "");
       formData.append("photo", user.photo || "");
       formData.append("caption", caption);
-
       await axios.post(`${API}/post/create`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-
       toast.success("Post created!");
       setshowCreateModal(false);
       setcaption("");
@@ -127,15 +146,11 @@ export default function CommunityPage() {
       setposts((prev) =>
         prev.map((p) =>
           p._id === postId
-            ? { ...p, likes: res.data.liked
-                ? [...p.likes, user.uid]
-                : p.likes.filter((id) => id !== user.uid) }
+            ? { ...p, likes: res.data.liked ? [...p.likes, user.uid] : p.likes.filter((id) => id !== user.uid) }
             : p
         )
       );
-    } catch (error) {
-      console.error(error);
-    }
+    } catch (error) { console.error(error); }
   };
 
   const handleComment = async (postId: string) => {
@@ -144,31 +159,20 @@ export default function CommunityPage() {
     if (!text?.trim()) return;
     try {
       const res = await axios.post(`${API}/post/comment`, {
-        postId,
-        uid: user.uid,
-        name: user.name,
-        photo: user.photo,
-        text,
+        postId, uid: user.uid, name: user.name, photo: user.photo, text,
       });
       setposts((prev) =>
-        prev.map((p) =>
-          p._id === postId ? { ...p, comments: res.data.comments } : p
-        )
+        prev.map((p) => p._id === postId ? { ...p, comments: res.data.comments } : p)
       );
       setcommentText((prev) => ({ ...prev, [postId]: "" }));
-    } catch (error) {
-      console.error(error);
-    }
+    } catch (error) { console.error(error); }
   };
 
   const handleShare = async (postId: string) => {
     if (!user) { toast.error("Please login to share."); return; }
     try {
       await axios.post(`${API}/post/share`, {
-        postId,
-        uid: user.uid,
-        name: user.name,
-        photo: user.photo,
+        postId, uid: user.uid, name: user.name, photo: user.photo,
       });
       toast.success("Post shared to your profile!");
       fetchFeed();
@@ -209,22 +213,20 @@ export default function CommunityPage() {
       <div className="max-w-2xl mx-auto px-4 py-8">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-2xl font-extrabold text-gray-900">Community</h1>
             {user && (
               <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
                 <Users className="h-3.5 w-3.5" />
                 {friendCount} friend{friendCount !== 1 ? "s" : ""} —{" "}
-                {postLimit === 0
-                  ? "Add friends to post"
-                  : postLimit === Infinity
-                  ? "Unlimited posts"
+                {postLimit === 0 ? "Add friends to post"
+                  : postLimit === Infinity ? "Unlimited posts"
                   : `${postLimit} post${postLimit !== 1 ? "s" : ""}/day`}
               </p>
             )}
           </div>
-          {user && (
+          {user && activeTab === "feed" && (
             <button
               onClick={() => setshowCreateModal(true)}
               className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl font-semibold hover:bg-blue-700"
@@ -235,170 +237,217 @@ export default function CommunityPage() {
           )}
         </div>
 
-        {/* Feed */}
-        {loading ? (
-          <div className="flex justify-center py-20">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600"></div>
-          </div>
-        ) : posts.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">
-            <Image className="h-12 w-12 mx-auto mb-3 opacity-30" />
-            <p>No posts yet. Be the first to post!</p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {posts.map((post) => (
-              <div key={post._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setactiveTab("feed")}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+              activeTab === "feed" ? "bg-blue-600 text-white" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+            }`}
+          >
+            Feed
+          </button>
+          <button
+            onClick={() => setactiveTab("people")}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+              activeTab === "people" ? "bg-blue-600 text-white" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+            }`}
+          >
+            People
+          </button>
+        </div>
 
-                {/* Post Header */}
-                <div className="flex items-center justify-between p-4">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={post.photo || `https://ui-avatars.com/api/?name=${post.name}&background=3b82f6&color=fff`}
-                      alt={post.name}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
-                    <div>
-                      <p className="font-semibold text-gray-900 text-sm">{post.name}</p>
-                      <p className="text-xs text-gray-400">{formatDate(post.createdAt)}</p>
-                    </div>
-                  </div>
+        {/* ── FEED TAB ── */}
+        {activeTab === "feed" && (
+          <>
+            {loading ? (
+              <div className="flex justify-center py-20">
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600"></div>
+              </div>
+            ) : posts.length === 0 ? (
+              <div className="text-center py-20 text-gray-400">
+                <ImageIcon className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                <p>No posts yet. Be the first to post!</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {posts.map((post) => (
+                  <div key={post._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
 
-                  {/* Follow button — don't show for own posts */}
-                  {user && post.uid !== user.uid && (
-                    <button
-                      onClick={() => handleFollow(post.uid)}
-                      className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
-                        followingUids.includes(post.uid)
-                          ? "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                          : "bg-blue-50 text-blue-600 hover:bg-blue-100"
-                      }`}
-                    >
-                      {followingUids.includes(post.uid) ? (
-                        <><UserCheck className="h-3 w-3" /> Following</>
-                      ) : (
-                        <><UserPlus className="h-3 w-3" /> Follow</>
-                      )}
-                    </button>
-                  )}
-                </div>
-
-                {/* Shared indicator */}
-                {post.sharedFrom && (
-                  <div className="px-4 pb-1">
-                    <span className="text-xs text-gray-400 flex items-center gap-1">
-                      <Share2 className="h-3 w-3" /> Shared post
-                    </span>
-                  </div>
-                )}
-
-                {/* Media */}
-                <div className="w-full bg-black">
-                  {post.mediaType === "video" ? (
-                    <video
-                      src={post.mediaUrl}
-                      controls
-                      className="w-full max-h-96 object-contain"
-                    />
-                  ) : (
-                    <img
-                      src={post.mediaUrl}
-                      alt={post.caption}
-                      className="w-full max-h-96 object-contain"
-                    />
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="px-4 pt-3 pb-1 flex items-center gap-4">
-                  <button
-                    onClick={() => handleLike(post._id)}
-                    className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                      user && post.likes.includes(user.uid)
-                        ? "text-red-500"
-                        : "text-gray-500 hover:text-red-500"
-                    }`}
-                  >
-                    <Heart
-                      className="h-5 w-5"
-                      fill={user && post.likes.includes(user.uid) ? "currentColor" : "none"}
-                    />
-                    {post.likes.length}
-                  </button>
-
-                  <button
-                    onClick={() => setshowComments((prev) => ({ ...prev, [post._id]: !prev[post._id] }))}
-                    className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-blue-600"
-                  >
-                    <MessageCircle className="h-5 w-5" />
-                    {post.comments.length}
-                  </button>
-
-                  <button
-                    onClick={() => handleShare(post._id)}
-                    className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-green-600"
-                  >
-                    <Share2 className="h-5 w-5" />
-                    {post.shares.length}
-                  </button>
-                </div>
-
-                {/* Caption */}
-                {post.caption && (
-                  <div className="px-4 pb-2">
-                    <span className="text-sm text-gray-800">
-                      <span className="font-semibold">{post.name}</span>{" "}
-                      {post.caption}
-                    </span>
-                  </div>
-                )}
-
-                {/* Comments */}
-                {showComments[post._id] && (
-                  <div className="px-4 pb-4 space-y-3 border-t pt-3">
-                    {post.comments.map((c) => (
-                      <div key={c._id} className="flex items-start gap-2">
+                    {/* Post Header */}
+                    <div className="flex items-center justify-between p-4">
+                      <div className="flex items-center gap-3">
                         <img
-                          src={c.photo || `https://ui-avatars.com/api/?name=${c.name}&background=3b82f6&color=fff`}
-                          alt={c.name}
-                          className="w-7 h-7 rounded-full"
+                          src={post.photo || `https://ui-avatars.com/api/?name=${post.name}&background=3b82f6&color=fff`}
+                          alt={post.name}
+                          className="w-10 h-10 rounded-full object-cover"
                         />
-                        <div className="bg-gray-50 rounded-xl px-3 py-1.5 text-sm flex-1">
-                          <span className="font-semibold text-gray-800">{c.name}</span>{" "}
-                          <span className="text-gray-600">{c.text}</span>
+                        <div>
+                          <p className="font-semibold text-gray-900 text-sm">{post.name}</p>
+                          <p className="text-xs text-gray-400">{formatDate(post.createdAt)}</p>
                         </div>
                       </div>
-                    ))}
-
-                    {user && (
-                      <div className="flex items-center gap-2 mt-2">
-                        <img
-                          src={user.photo || `https://ui-avatars.com/api/?name=${user.name}&background=3b82f6&color=fff`}
-                          alt={user.name}
-                          className="w-7 h-7 rounded-full"
-                        />
-                        <input
-                          type="text"
-                          value={commentText[post._id] || ""}
-                          onChange={(e) => setcommentText((prev) => ({ ...prev, [post._id]: e.target.value }))}
-                          onKeyDown={(e) => e.key === "Enter" && handleComment(post._id)}
-                          placeholder="Add a comment..."
-                          className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-4 py-1.5 text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                      {user && post.uid !== user.uid && (
                         <button
-                          onClick={() => handleComment(post._id)}
-                          className="text-blue-600 text-sm font-semibold hover:text-blue-700"
+                          onClick={() => handleFollow(post.uid)}
+                          className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
+                            followingUids.includes(post.uid)
+                              ? "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                              : "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                          }`}
                         >
-                          Post
+                          {followingUids.includes(post.uid)
+                            ? <><UserCheck className="h-3 w-3" /> Following</>
+                            : <><UserPlus className="h-3 w-3" /> Follow</>}
                         </button>
+                      )}
+                    </div>
+
+                    {/* Shared indicator */}
+                    {post.sharedFrom && (
+                      <div className="px-4 pb-1">
+                        <span className="text-xs text-gray-400 flex items-center gap-1">
+                          <Share2 className="h-3 w-3" /> Shared post
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Media */}
+                    <div className="w-full bg-black">
+                      {post.mediaType === "video" ? (
+                        <video src={post.mediaUrl} controls className="w-full max-h-96 object-contain" />
+                      ) : (
+                        <img src={post.mediaUrl} alt={post.caption} className="w-full max-h-96 object-contain" />
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="px-4 pt-3 pb-1 flex items-center gap-4">
+                      <button
+                        onClick={() => handleLike(post._id)}
+                        className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
+                          user && post.likes.includes(user.uid) ? "text-red-500" : "text-gray-500 hover:text-red-500"
+                        }`}
+                      >
+                        <Heart className="h-5 w-5" fill={user && post.likes.includes(user.uid) ? "currentColor" : "none"} />
+                        {post.likes.length}
+                      </button>
+                      <button
+                        onClick={() => setshowComments((prev) => ({ ...prev, [post._id]: !prev[post._id] }))}
+                        className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-blue-600"
+                      >
+                        <MessageCircle className="h-5 w-5" />
+                        {post.comments.length}
+                      </button>
+                      <button
+                        onClick={() => handleShare(post._id)}
+                        className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-green-600"
+                      >
+                        <Share2 className="h-5 w-5" />
+                        {post.shares.length}
+                      </button>
+                    </div>
+
+                    {/* Caption */}
+                    {post.caption && (
+                      <div className="px-4 pb-2">
+                        <span className="text-sm text-gray-800">
+                          <span className="font-semibold">{post.name}</span> {post.caption}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Comments */}
+                    {showComments[post._id] && (
+                      <div className="px-4 pb-4 space-y-3 border-t pt-3">
+                        {post.comments.map((c) => (
+                          <div key={c._id} className="flex items-start gap-2">
+                            <img
+                              src={c.photo || `https://ui-avatars.com/api/?name=${c.name}&background=3b82f6&color=fff`}
+                              alt={c.name}
+                              className="w-7 h-7 rounded-full"
+                            />
+                            <div className="bg-gray-50 rounded-xl px-3 py-1.5 text-sm flex-1">
+                              <span className="font-semibold text-gray-800">{c.name}</span>{" "}
+                              <span className="text-gray-600">{c.text}</span>
+                            </div>
+                          </div>
+                        ))}
+                        {user && (
+                          <div className="flex items-center gap-2 mt-2">
+                            <img
+                              src={user.photo || `https://ui-avatars.com/api/?name=${user.name}&background=3b82f6&color=fff`}
+                              alt={user.name}
+                              className="w-7 h-7 rounded-full"
+                            />
+                            <input
+                              type="text"
+                              value={commentText[post._id] || ""}
+                              onChange={(e) => setcommentText((prev) => ({ ...prev, [post._id]: e.target.value }))}
+                              onKeyDown={(e) => e.key === "Enter" && handleComment(post._id)}
+                              placeholder="Add a comment..."
+                              className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-4 py-1.5 text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <button onClick={() => handleComment(post._id)} className="text-blue-600 text-sm font-semibold hover:text-blue-700">
+                              Post
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
+                ))}
               </div>
-            ))}
+            )}
+          </>
+        )}
+
+        {/* ── PEOPLE TAB ── */}
+        {activeTab === "people" && (
+          <div className="space-y-3">
+            {!user ? (
+              <p className="text-center text-gray-400 py-10">Please login to see people.</p>
+            ) : usersLoading ? (
+              <div className="flex justify-center py-20">
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600"></div>
+              </div>
+            ) : allUsers.length === 0 ? (
+              <p className="text-center text-gray-400 py-10">No other users found yet.</p>
+            ) : (
+              allUsers.map((u) => (
+                <div key={u._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={`https://ui-avatars.com/api/?name=${u.name || u.email}&background=3b82f6&color=fff`}
+                      alt={u.name}
+                      className="w-10 h-10 rounded-full"
+                    />
+                    <div>
+                      <p className="font-semibold text-gray-800 text-sm">{u.name || u.email?.split("@")[0]}</p>
+                      <p className="text-xs text-gray-400">{u.email}</p>
+                      {friendUids.includes(u.firebaseUid) && (
+                        <span className="text-xs text-green-600 font-medium">✓ Friends</span>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleFollow(u.firebaseUid)}
+                    className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
+                      followingUids.includes(u.firebaseUid)
+                        ? "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        : "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                    }`}
+                  >
+                    {followingUids.includes(u.firebaseUid)
+                      ? <><UserCheck className="h-3 w-3" /> Following</>
+                      : <><UserPlus className="h-3 w-3" /> Follow</>}
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         )}
+
       </div>
 
       {/* Create Post Modal */}
@@ -411,20 +460,14 @@ export default function CommunityPage() {
                 <X className="h-5 w-5 text-gray-500" />
               </button>
             </div>
-
             <div className="p-5 space-y-4">
-              {/* Friend count info */}
-              <div className={`text-xs px-3 py-2 rounded-lg font-medium ${
-                postLimit === 0 ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"
-              }`}>
+              <div className={`text-xs px-3 py-2 rounded-lg font-medium ${postLimit === 0 ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"}`}>
                 {postLimit === 0
                   ? "⚠️ You need at least 1 mutual friend to post."
                   : postLimit === Infinity
                   ? `✓ You have ${friendCount} friends — unlimited posts!`
                   : `✓ You have ${friendCount} friend(s) — ${postLimit} post(s)/day allowed.`}
               </div>
-
-              {/* Media upload */}
               <div
                 onClick={() => fileRef.current?.click()}
                 className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-blue-400 transition-colors"
@@ -438,23 +481,15 @@ export default function CommunityPage() {
                 ) : (
                   <div className="space-y-2">
                     <div className="flex justify-center gap-3">
-                      <Image className="h-8 w-8 text-gray-400" />
-                      <Video className="h-8 w-8 text-gray-400" />
+                      <ImageIcon className="h-8 w-8 text-gray-400" />
+                      <VideoIcon className="h-8 w-8 text-gray-400" />
                     </div>
                     <p className="text-gray-500 text-sm">Click to upload photo or video</p>
                     <p className="text-gray-400 text-xs">JPG, PNG, GIF, MP4, MOV</p>
                   </div>
                 )}
               </div>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*,video/*"
-                onChange={handleMediaSelect}
-                className="hidden"
-              />
-
-              {/* Caption */}
+              <input ref={fileRef} type="file" accept="image/*,video/*" onChange={handleMediaSelect} className="hidden" />
               <textarea
                 value={caption}
                 onChange={(e) => setcaption(e.target.value)}
@@ -462,7 +497,6 @@ export default function CommunityPage() {
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-xl text-black text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
-
               <button
                 onClick={handleCreatePost}
                 disabled={posting || !mediaFile || postLimit === 0}
