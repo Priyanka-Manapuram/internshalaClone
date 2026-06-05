@@ -5,7 +5,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import {
   Heart, MessageCircle, Share2, Upload, X,
-  UserPlus, UserCheck, Users,
+  UserPlus, UserCheck, Users, Send, Inbox,
 } from "lucide-react";
 import { ImageIcon, VideoIcon } from "lucide-react";
 
@@ -33,6 +33,15 @@ interface Post {
   createdAt: string;
 }
 
+interface InboxMessage {
+  _id: string;
+  fromName: string;
+  fromPhoto: string;
+  postId: Post | null;
+  read: boolean;
+  createdAt: string;
+}
+
 export default function CommunityPage() {
   const user = useSelector(selectuser);
   const [posts, setposts] = useState<Post[]>([]);
@@ -48,15 +57,25 @@ export default function CommunityPage() {
   const [commentText, setcommentText] = useState<{ [key: string]: string }>({});
   const [showComments, setshowComments] = useState<{ [key: string]: boolean }>({});
   const fileRef = useRef<HTMLInputElement>(null);
-  const [activeTab, setactiveTab] = useState<"feed" | "people">("feed");
+  const [activeTab, setactiveTab] = useState<"feed" | "people" | "inbox">("feed");
   const [allUsers, setallUsers] = useState<any[]>([]);
   const [usersLoading, setusersLoading] = useState(false);
+
+  // ── Share-to-friend modal state ──────────────────────────────────────────
+  const [shareModalPost, setshareModalPost] = useState<Post | null>(null);
+  const [sendingTo, setsendingTo] = useState<string | null>(null); // uid being sent to
+
+  // ── Inbox state ──────────────────────────────────────────────────────────
+  const [inboxMessages, setinboxMessages] = useState<InboxMessage[]>([]);
+  const [inboxLoading, setinboxLoading] = useState(false);
+  const [unreadCount, setunreadCount] = useState(0);
 
   useEffect(() => {
     fetchFeed();
     if (user) {
       fetchFriendData();
       fetchUsers();
+      fetchUnreadCount();
     }
   }, [user]);
 
@@ -92,6 +111,30 @@ export default function CommunityPage() {
       console.error(error);
     } finally {
       setusersLoading(false);
+    }
+  };
+
+  const fetchUnreadCount = async () => {
+    if (!user) return;
+    try {
+      const res = await axios.get(`${API}/message/unread/${user.uid}`);
+      setunreadCount(res.data.count || 0);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchInbox = async () => {
+    if (!user) return;
+    try {
+      setinboxLoading(true);
+      const res = await axios.get(`${API}/message/inbox/${user.uid}`);
+      setinboxMessages(res.data.messages || []);
+      setunreadCount(0); // all marked read by the endpoint
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setinboxLoading(false);
     }
   };
 
@@ -168,16 +211,24 @@ export default function CommunityPage() {
     } catch (error) { console.error(error); }
   };
 
-  const handleShare = async (postId: string) => {
-    if (!user) { toast.error("Please login to share."); return; }
+  // ── Share to friend (DM) — replaces the old repost handleShare ───────────
+  const handleSendToFriend = async (toUid: string) => {
+    if (!user || !shareModalPost) return;
     try {
-      await axios.post(`${API}/post/share`, {
-        postId, uid: user.uid, name: user.name, photo: user.photo,
+      setsendingTo(toUid);
+      await axios.post(`${API}/message/send`, {
+        fromUid: user.uid,
+        fromName: user.name,
+        fromPhoto: user.photo,
+        toUid,
+        postId: shareModalPost._id,
       });
-      toast.success("Post shared to your profile!");
-      fetchFeed();
+      toast.success("Post sent!");
+      setshareModalPost(null);
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Failed to share.");
+      toast.error(error?.response?.data?.message || "Failed to send.");
+    } finally {
+      setsendingTo(null);
     }
   };
 
@@ -207,6 +258,10 @@ export default function CommunityPage() {
   };
 
   const postLimit = getPostLimit(friendCount);
+
+  // Friends list to show in the share modal
+  // allUsers filtered to only mutual friends (friendUids)
+  const friendUsers = allUsers.filter((u) => friendUids.includes(u.firebaseUid));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -254,6 +309,20 @@ export default function CommunityPage() {
             }`}
           >
             People
+          </button>
+          {/* Inbox tab with unread badge */}
+          <button
+            onClick={() => { setactiveTab("inbox"); fetchInbox(); }}
+            className={`relative px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+              activeTab === "inbox" ? "bg-blue-600 text-white" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+            }`}
+          >
+            Inbox
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
           </button>
         </div>
 
@@ -339,8 +408,12 @@ export default function CommunityPage() {
                         <MessageCircle className="h-5 w-5" />
                         {post.comments.length}
                       </button>
+                      {/* Share button now opens friend-picker modal */}
                       <button
-                        onClick={() => handleShare(post._id)}
+                        onClick={() => {
+                          if (!user) { toast.error("Please login to share."); return; }
+                          setshareModalPost(post);
+                        }}
                         className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-green-600"
                       >
                         <Share2 className="h-5 w-5" />
@@ -402,7 +475,7 @@ export default function CommunityPage() {
           </>
         )}
 
-        {/* ── PEOPLE TAB ── */}
+        {/* ── PEOPLE TAB ── (unchanged) */}
         {activeTab === "people" && (
           <div className="space-y-3">
             {!user ? (
@@ -448,9 +521,105 @@ export default function CommunityPage() {
           </div>
         )}
 
+        {/* ── INBOX TAB ── */}
+        {activeTab === "inbox" && (
+          <div className="space-y-4">
+            {!user ? (
+              <p className="text-center text-gray-400 py-10">Please login to see your inbox.</p>
+            ) : inboxLoading ? (
+              <div className="flex justify-center py-20">
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600"></div>
+              </div>
+            ) : inboxMessages.length === 0 ? (
+              <div className="text-center py-20 text-gray-400">
+                <Inbox className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                <p>No shared posts yet.</p>
+              </div>
+            ) : (
+              inboxMessages.map((msg) => (
+                <div key={msg._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                  {/* Sent by */}
+                  <div className="flex items-center gap-2 px-4 pt-3 pb-2">
+                    <img
+                      src={msg.fromPhoto || `https://ui-avatars.com/api/?name=${msg.fromName}&background=3b82f6&color=fff`}
+                      alt={msg.fromName}
+                      className="w-7 h-7 rounded-full"
+                    />
+                    <p className="text-sm text-gray-600">
+                      <span className="font-semibold text-gray-800">{msg.fromName}</span> shared a post with you
+                    </p>
+                    <span className="ml-auto text-xs text-gray-400">{formatDate(msg.createdAt)}</span>
+                  </div>
+                  {/* Post preview */}
+                  {msg.postId ? (
+                    <>
+                      <div className="w-full bg-black">
+                        {msg.postId.mediaType === "video" ? (
+                          <video src={msg.postId.mediaUrl} controls className="w-full max-h-72 object-contain" />
+                        ) : (
+                          <img src={msg.postId.mediaUrl} alt={msg.postId.caption} className="w-full max-h-72 object-contain" />
+                        )}
+                      </div>
+                      {msg.postId.caption && (
+                        <div className="px-4 py-2 text-sm text-gray-700">
+                          <span className="font-semibold">{msg.postId.name}</span> {msg.postId.caption}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p className="px-4 pb-3 text-sm text-gray-400">Post no longer available.</p>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
       </div>
 
-      {/* Create Post Modal */}
+      {/* ── Share-to-Friend Modal ── */}
+      {shareModalPost && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
+            <div className="flex items-center justify-between p-5 border-b">
+              <h2 className="text-lg font-bold text-gray-900">Send to Friend</h2>
+              <button onClick={() => setshareModalPost(null)}>
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-4 space-y-3 max-h-80 overflow-y-auto">
+              {friendUsers.length === 0 ? (
+                <p className="text-center text-gray-400 py-6 text-sm">
+                  No mutual friends yet. Follow someone and wait for them to follow back!
+                </p>
+              ) : (
+                friendUsers.map((u) => (
+                  <div key={u._id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={`https://ui-avatars.com/api/?name=${u.name || u.email}&background=3b82f6&color=fff`}
+                        alt={u.name}
+                        className="w-9 h-9 rounded-full"
+                      />
+                      <p className="text-sm font-medium text-gray-800">{u.name || u.email?.split("@")[0]}</p>
+                    </div>
+                    <button
+                      onClick={() => handleSendToFriend(u.firebaseUid)}
+                      disabled={sendingTo === u.firebaseUid}
+                      className="flex items-center gap-1.5 bg-blue-600 text-white text-xs px-3 py-1.5 rounded-full font-semibold hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      <Send className="h-3 w-3" />
+                      {sendingTo === u.firebaseUid ? "Sending..." : "Send"}
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Post Modal (unchanged) */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">

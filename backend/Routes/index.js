@@ -9,6 +9,7 @@ const subscription = require("./subscription");
 const resume = require("./resume");
 const post = require("./post");
 const friend = require("./friend");
+const message = require("./message");
 
 router.use("/admin", admin);
 router.use("/internship", intern);
@@ -19,5 +20,6 @@ router.use("/subscription", subscription);
 router.use("/resume", resume);
 router.use("/post", post);
 router.use("/friend", friend);
+router.use("/message", message); 
 
 module.exports = router;
