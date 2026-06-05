@@ -234,7 +234,7 @@ const Navbar = () => {
                           `https://ui-avatars.com/api/?name=${user?.name}&background=3b82f6&color=fff`
                         }
                         alt="profile"
-                        className="w-full h-full object-cover"
+                        className="w-9 h-9 rounded-full object-cover aspect-square"
                       />
                     </Link>
                   </button>
