@@ -4,15 +4,13 @@ const Friend = require("../Model/Friend");
 
 // ─── GET /api/friend/users/:uid ───────────────────────────────────────────────
 // Returns all users except the current user
-router.get("/users/:uid", async (req, res) => {
+router.get("/allusers/:uid", async (req, res) => {
   try {
     const { uid } = req.params;
     const User = require("../Model/User");
 
     const users = await User.find(
-      {
-        firebaseUid: { $exists: true, $ne: null, $nin: [uid, ""] }
-      },
+      { firebaseUid: { $exists: true, $ne: null, $nin: [uid, ""] } },
       { firebaseUid: 1, name: 1, email: 1 }
     );
 

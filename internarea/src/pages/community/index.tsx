@@ -86,7 +86,7 @@ export default function CommunityPage() {
     if (!user) return;
     try {
       setusersLoading(true);
-      const res = await axios.get(`${API}/friend/users/${user.uid}`);
+      const res = await axios.get(`${API}/friend/allusers/${user.uid}`);
       setallUsers(res.data.users || []);
     } catch (error) {
       console.error(error);
