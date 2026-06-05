@@ -15,6 +15,7 @@ const PLANS = [
     limit: 1,
     icon: Shield,
     color: "gray",
+    popular: false,
     features: ["1 application/month", "Basic profile", "Job search"],
   },
   {
@@ -23,6 +24,7 @@ const PLANS = [
     limit: 3,
     icon: Zap,
     color: "orange",
+    popular: false,
     features: ["3 applications/month", "Priority listing", "Email support"],
   },
   {
@@ -31,8 +33,8 @@ const PLANS = [
     limit: 5,
     icon: Star,
     color: "blue",
-    features: ["5 applications/month", "Featured profile", "Resume builder"],
     popular: true,
+    features: ["5 applications/month", "Featured profile", "Resume builder"],
   },
   {
     name: "Gold",
@@ -40,6 +42,7 @@ const PLANS = [
     limit: 999999,
     icon: Crown,
     color: "yellow",
+    popular: false,
     features: ["Unlimited applications", "Top placement", "Dedicated support"],
   },
 ];
