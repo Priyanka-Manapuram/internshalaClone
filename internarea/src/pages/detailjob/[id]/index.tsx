@@ -118,14 +118,16 @@ import { selectuser } from "@/Feature/Userslice";
 //     },
 //   ];
 const index = () => {
-  const user=useSelector(selectuser)
+  const user = useSelector(selectuser);
   const router = useRouter();
   const { id } = router.query;
   const [jobdata, setjob] = useState<any>([]);
   useEffect(() => {
     const fetchdata = async () => {
       try {
-        const res = await axios.get(`https://internshalaclone-jby6.onrender.com/api/job/${id}`);
+        const res = await axios.get(
+          `https://internshalaclone-jby6.onrender.com/api/job/${id}`,
+        );
         setjob(res.data);
       } catch (error) {
         console.log(error);
@@ -145,65 +147,65 @@ const index = () => {
     );
   }
   const handlesubmitapplication = async () => {
-  if (!coverLetter.trim()) {
-    toast.error("please write a cover letter");
-    return;
-  }
-  if (!availability) {
-    toast.error("please select your availability");
-    return;
-  }
-
-  if (!user) {
-    toast.error("Please login first");
-    return;
-  }
-
-  try {
-    // Step 1 — check limit before applying
-    const limitRes = await axios.post(
-      "https://internshalaclone-jby6.onrender.com/api/subscription/check-limit",
-      { uid: user.uid }
-    );
-
-    if (!limitRes.data.canApply) {
-      toast.error(
-        `You have used all ${limitRes.data.applicationLimit} applications on your ${limitRes.data.plan} plan. Please upgrade your plan.`,
-        { autoClose: 5000 }
-      );
-      router.push("/subscription");
+    if (!coverLetter.trim()) {
+      toast.error("please write a cover letter");
+      return;
+    }
+    if (!availability) {
+      toast.error("please select your availability");
       return;
     }
 
-    // Step 2 — submit application
-    const applicationdata = {
-      uid: user.uid,
-      category: jobdata.category,
-      company: jobdata.company,
-      coverLetter: coverLetter,
-      user: user,
-      Application: id,
-      availability,
-    };
-    await axios.post(
-      "https://internshalaclone-jby6.onrender.com/api/application",
-      applicationdata
-    );
+    if (!user) {
+      toast.error("Please login first");
+      return;
+    }
 
-    // Step 3 — increment usage
-    await axios.post(
-      "https://internshalaclone-jby6.onrender.com/api/subscription/increment-usage",
-      { uid: user.uid }
-    );
+    try {
+      // Step 1 — check limit before applying
+      const limitRes = await axios.post(
+        "https://internshalaclone-jby6.onrender.com/api/subscription/check-limit",
+        { uid: user.uid },
+      );
 
-    toast.success("Application submitted successfully");
-    router.push("/job");
-  } catch (error) {
-    console.error(error);
-    toast.error("Failed to submit application");
-  }
-};
-    return (
+      if (!limitRes.data.canApply) {
+        toast.error(
+          `You have used all ${limitRes.data.applicationLimit} applications on your ${limitRes.data.plan} plan. Please upgrade your plan.`,
+          { autoClose: 5000 },
+        );
+        router.push("/subscription");
+        return;
+      }
+
+      // Step 2 — submit application
+      const applicationdata = {
+        uid: user.uid,
+        category: jobdata.category,
+        company: jobdata.company,
+        coverLetter: coverLetter,
+        user: user,
+        Application: id,
+        availability,
+      };
+      await axios.post(
+        "https://internshalaclone-jby6.onrender.com/api/application",
+        applicationdata,
+      );
+
+      // Step 3 — increment usage
+      await axios.post(
+        "https://internshalaclone-jby6.onrender.com/api/subscription/increment-usage",
+        { uid: user.uid },
+      );
+
+      toast.success("Application submitted successfully");
+      router.push("/job");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to submit application");
+    }
+  };
+  return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
         {/* Header Section */}
@@ -276,8 +278,14 @@ const index = () => {
         {/* Apply Button */}
         <div className="p-6 flex justify-center">
           <button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition duration-150"
+            onClick={() => {
+              if (!user) {
+                toast.error("Please login to apply.");
+                return;
+              }
+              setIsModalOpen(true);
+            }}
+            className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700"
           >
             Apply Now
           </button>

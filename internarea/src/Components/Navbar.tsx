@@ -58,8 +58,11 @@ const Navbar = () => {
         toast.success("Logged in successfully");
       }
     } catch (error: any) {
+      // In handlelogin, update the catch block:
       if (error?.response?.status === 403) {
         toast.error("Mobile login only allowed 10 AM – 1 PM");
+        await signOut(auth); // ← add this — sign out from Firebase
+        dispatch(logout()); // ← add this — clear Redux
       } else {
         toast.error("Login failed");
       }
@@ -226,6 +229,12 @@ const Navbar = () => {
                   >
                     {t("plans")}
                   </Link>
+
+                  <button className="flex items-center space-x-1 text-gray-700 hover:text-blue-600">
+                    <Link href={"/community"}>
+                      <span>Community</span>
+                    </Link>
+                  </button>
                   <button className="flex items-center space-x-2">
                     <Link href={"/profile"}>
                       <img
@@ -236,11 +245,6 @@ const Navbar = () => {
                         alt="profile"
                         className="w-8 h-8 min-w-8 min-h-8 max-w-8 max-h-8 rounded-full object-cover flex-shrink-0"
                       />
-                    </Link>
-                  </button>
-                  <button className="flex items-center space-x-1 text-gray-700 hover:text-blue-600">
-                    <Link href={"/community"}>
-                      <span>Community</span>
                     </Link>
                   </button>
 
