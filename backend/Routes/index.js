@@ -22,4 +22,8 @@ router.use("/post", post);
 router.use("/friend", friend);
 router.use("/message", message); 
 
+router.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", time: new Date().toISOString() });
+});
+
 module.exports = router;
