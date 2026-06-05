@@ -101,28 +101,30 @@ const Navbar = () => {
     { code: "fr", label: "Français" },
   ];
 
+  const [pendingLang, setpendingLang] = useState<string | null>(null);
+
   const handleLangChange = async (code: string) => {
     setshowLangMenu(false);
-    changeLang(code as any);
 
-    if (code === "fr") {
-      // Apply French first, then ask for OTP
-      if (user?.email) {
-        try {
-          await axios.post(
-            "https://internshalaclone-jby6.onrender.com/api/auth/resend-otp",
-            { email: user.email },
-          );
-          setfrenchOtpModal(true);
-        } catch (error) {
-          toast.error("Failed to send OTP.");
-        }
-      }
-    } else {
-      toast.success(t("languageChanged"));
+    if (code === lang) return; // already selected
+
+    if (!user?.email) {
+      toast.error("Please login to change language.");
+      return;
+    }
+
+    try {
+      await axios.post(
+        "https://internshalaclone-jby6.onrender.com/api/auth/resend-otp",
+        { email: user.email },
+      );
+      setpendingLang(code); // store which language user wants
+      setfrenchOtpModal(true);
+      toast.info("OTP sent to your email. Verify to change language.");
+    } catch (error) {
+      toast.error("Failed to send OTP.");
     }
   };
-
   const handleFrenchOtpVerify = async () => {
     if (!frenchOtp || frenchOtp.length !== 6) return;
     try {
@@ -131,6 +133,10 @@ const Navbar = () => {
         "https://internshalaclone-jby6.onrender.com/api/auth/verify-otp",
         { email: user?.email, otp: frenchOtp },
       );
+      if (pendingLang) {
+        changeLang(pendingLang as any); // ← apply whatever language was selected
+        setpendingLang(null);
+      }
       setfrenchOtpModal(false);
       setfrenchOtp("");
       toast.success(t("otpVerified"));
@@ -340,11 +346,14 @@ const Navbar = () => {
       {frenchOtpModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-lg p-8 max-w-sm w-full mx-4 text-center">
-            <div className="text-4xl mb-4">🇫🇷</div>
+            <div className="text-4xl mb-4">🌐</div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">
-              {t("frenchOtpTitle")}
+              Language Change Verification
             </h3>
-            <p className="text-gray-500 text-sm mb-6">{t("frenchOtpMsg")}</p>
+            <p className="text-gray-500 text-sm mb-6">
+              Enter the OTP sent to <strong>{user?.email}</strong> to switch
+              language.
+            </p>
             <input
               type="text"
               maxLength={6}
@@ -358,16 +367,17 @@ const Navbar = () => {
               disabled={frenchOtpLoading || frenchOtp.length !== 6}
               className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50 mb-3"
             >
-              {frenchOtpLoading ? "Verifying..." : t("verifyOtp")}
+              {frenchOtpLoading ? "Verifying..." : "Verify OTP"}
             </button>
             <button
               onClick={() => {
                 setfrenchOtpModal(false);
-                changeLang("en");
+                setfrenchOtp("");
+                setpendingLang(null);
               }}
               className="text-sm text-gray-400 hover:text-gray-600"
             >
-              Cancel (revert to English)
+              Cancel
             </button>
           </div>
         </div>
