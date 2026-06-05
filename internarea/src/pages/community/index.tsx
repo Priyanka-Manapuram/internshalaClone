@@ -4,8 +4,16 @@ import { selectuser } from "@/Feature/Userslice";
 import axios from "axios";
 import { toast } from "react-toastify";
 import {
-  Heart, MessageCircle, Share2, Upload, X,
-  UserPlus, UserCheck, Users, Send, Inbox,
+  Heart,
+  MessageCircle,
+  Share2,
+  Upload,
+  X,
+  UserPlus,
+  UserCheck,
+  Users,
+  Send,
+  Inbox,
 } from "lucide-react";
 import { ImageIcon, VideoIcon } from "lucide-react";
 
@@ -55,9 +63,13 @@ export default function CommunityPage() {
   const [mediaPreview, setmediaPreview] = useState<string | null>(null);
   const [posting, setposting] = useState(false);
   const [commentText, setcommentText] = useState<{ [key: string]: string }>({});
-  const [showComments, setshowComments] = useState<{ [key: string]: boolean }>({});
+  const [showComments, setshowComments] = useState<{ [key: string]: boolean }>(
+    {},
+  );
   const fileRef = useRef<HTMLInputElement>(null);
-  const [activeTab, setactiveTab] = useState<"feed" | "people" | "inbox">("feed");
+  const [activeTab, setactiveTab] = useState<"feed" | "people" | "inbox">(
+    "feed",
+  );
   const [allUsers, setallUsers] = useState<any[]>([]);
   const [usersLoading, setusersLoading] = useState(false);
 
@@ -154,10 +166,19 @@ export default function CommunityPage() {
   };
 
   const handleCreatePost = async () => {
-    if (!user) { toast.error("Please login first."); return; }
-    if (!mediaFile) { toast.error("Please select a photo or video."); return; }
+    if (!user) {
+      toast.error("Please login first.");
+      return;
+    }
+    if (!mediaFile) {
+      toast.error("Please select a photo or video.");
+      return;
+    }
     const limit = getPostLimit(friendCount);
-    if (limit === 0) { toast.error("You need at least 1 friend to post!"); return; }
+    if (limit === 0) {
+      toast.error("You need at least 1 friend to post!");
+      return;
+    }
     try {
       setposting(true);
       const formData = new FormData();
@@ -183,32 +204,56 @@ export default function CommunityPage() {
   };
 
   const handleLike = async (postId: string) => {
-    if (!user) { toast.error("Please login to like."); return; }
+    if (!user) {
+      toast.error("Please login to like.");
+      return;
+    }
     try {
-      const res = await axios.post(`${API}/post/like`, { postId, uid: user.uid });
+      const res = await axios.post(`${API}/post/like`, {
+        postId,
+        uid: user.uid,
+      });
       setposts((prev) =>
         prev.map((p) =>
           p._id === postId
-            ? { ...p, likes: res.data.liked ? [...p.likes, user.uid] : p.likes.filter((id) => id !== user.uid) }
-            : p
-        )
+            ? {
+                ...p,
+                likes: res.data.liked
+                  ? [...p.likes, user.uid]
+                  : p.likes.filter((id) => id !== user.uid),
+              }
+            : p,
+        ),
       );
-    } catch (error) { console.error(error); }
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const handleComment = async (postId: string) => {
-    if (!user) { toast.error("Please login to comment."); return; }
+    if (!user) {
+      toast.error("Please login to comment.");
+      return;
+    }
     const text = commentText[postId];
     if (!text?.trim()) return;
     try {
       const res = await axios.post(`${API}/post/comment`, {
-        postId, uid: user.uid, name: user.name, photo: user.photo, text,
+        postId,
+        uid: user.uid,
+        name: user.name,
+        photo: user.photo,
+        text,
       });
       setposts((prev) =>
-        prev.map((p) => p._id === postId ? { ...p, comments: res.data.comments } : p)
+        prev.map((p) =>
+          p._id === postId ? { ...p, comments: res.data.comments } : p,
+        ),
       );
       setcommentText((prev) => ({ ...prev, [postId]: "" }));
-    } catch (error) { console.error(error); }
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   // ── Share to friend (DM) — replaces the old repost handleShare ───────────
@@ -216,6 +261,8 @@ export default function CommunityPage() {
     if (!user || !shareModalPost) return;
     try {
       setsendingTo(toUid);
+
+      // Send post to friend's inbox
       await axios.post(`${API}/message/send`, {
         fromUid: user.uid,
         fromName: user.name,
@@ -223,6 +270,24 @@ export default function CommunityPage() {
         toUid,
         postId: shareModalPost._id,
       });
+
+      // Increment share count on the original post
+      await axios.post(`${API}/post/share`, {
+        postId: shareModalPost._id,
+        uid: user.uid,
+        name: user.name,
+        photo: user.photo,
+      });
+
+      // Update share count in UI without refetching
+      setposts((prev) =>
+        prev.map((p) =>
+          p._id === shareModalPost._id
+            ? { ...p, shares: [...p.shares, user.uid] }
+            : p,
+        ),
+      );
+
       toast.success("Post sent!");
       setshareModalPost(null);
     } catch (error: any) {
@@ -233,11 +298,17 @@ export default function CommunityPage() {
   };
 
   const handleFollow = async (targetUid: string) => {
-    if (!user) { toast.error("Please login first."); return; }
+    if (!user) {
+      toast.error("Please login first.");
+      return;
+    }
     const isFollowing = followingUids.includes(targetUid);
     try {
       if (isFollowing) {
-        await axios.post(`${API}/friend/unfollow`, { uid: user.uid, targetUid });
+        await axios.post(`${API}/friend/unfollow`, {
+          uid: user.uid,
+          targetUid,
+        });
         setfollowingUids((prev) => prev.filter((id) => id !== targetUid));
         toast.success("Unfollowed.");
       } else {
@@ -253,7 +324,11 @@ export default function CommunityPage() {
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleString("en-IN", {
-      day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true,
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
     });
   };
 
@@ -261,12 +336,13 @@ export default function CommunityPage() {
 
   // Friends list to show in the share modal
   // allUsers filtered to only mutual friends (friendUids)
-  const friendUsers = allUsers.filter((u) => friendUids.includes(u.firebaseUid));
+  const friendUsers = allUsers.filter((u) =>
+    friendUids.includes(u.firebaseUid),
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-2xl mx-auto px-4 py-8">
-
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -275,9 +351,11 @@ export default function CommunityPage() {
               <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
                 <Users className="h-3.5 w-3.5" />
                 {friendCount} friend{friendCount !== 1 ? "s" : ""} —{" "}
-                {postLimit === 0 ? "Add friends to post"
-                  : postLimit === Infinity ? "Unlimited posts"
-                  : `${postLimit} post${postLimit !== 1 ? "s" : ""}/day`}
+                {postLimit === 0
+                  ? "Add friends to post"
+                  : postLimit === Infinity
+                    ? "Unlimited posts"
+                    : `${postLimit} post${postLimit !== 1 ? "s" : ""}/day`}
               </p>
             )}
           </div>
@@ -297,7 +375,9 @@ export default function CommunityPage() {
           <button
             onClick={() => setactiveTab("feed")}
             className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
-              activeTab === "feed" ? "bg-blue-600 text-white" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+              activeTab === "feed"
+                ? "bg-blue-600 text-white"
+                : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
             }`}
           >
             Feed
@@ -305,16 +385,23 @@ export default function CommunityPage() {
           <button
             onClick={() => setactiveTab("people")}
             className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
-              activeTab === "people" ? "bg-blue-600 text-white" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+              activeTab === "people"
+                ? "bg-blue-600 text-white"
+                : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
             }`}
           >
             People
           </button>
           {/* Inbox tab with unread badge */}
           <button
-            onClick={() => { setactiveTab("inbox"); fetchInbox(); }}
+            onClick={() => {
+              setactiveTab("inbox");
+              fetchInbox();
+            }}
             className={`relative px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
-              activeTab === "inbox" ? "bg-blue-600 text-white" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+              activeTab === "inbox"
+                ? "bg-blue-600 text-white"
+                : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
             }`}
           >
             Inbox
@@ -341,19 +428,28 @@ export default function CommunityPage() {
             ) : (
               <div className="space-y-6">
                 {posts.map((post) => (
-                  <div key={post._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-
+                  <div
+                    key={post._id}
+                    className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+                  >
                     {/* Post Header */}
                     <div className="flex items-center justify-between p-4">
                       <div className="flex items-center gap-3">
                         <img
-                          src={post.photo || `https://ui-avatars.com/api/?name=${post.name}&background=3b82f6&color=fff`}
+                          src={
+                            post.photo ||
+                            `https://ui-avatars.com/api/?name=${post.name}&background=3b82f6&color=fff`
+                          }
                           alt={post.name}
                           className="w-10 h-10 rounded-full object-cover"
                         />
                         <div>
-                          <p className="font-semibold text-gray-900 text-sm">{post.name}</p>
-                          <p className="text-xs text-gray-400">{formatDate(post.createdAt)}</p>
+                          <p className="font-semibold text-gray-900 text-sm">
+                            {post.name}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {formatDate(post.createdAt)}
+                          </p>
                         </div>
                       </div>
                       {user && post.uid !== user.uid && (
@@ -365,9 +461,15 @@ export default function CommunityPage() {
                               : "bg-blue-50 text-blue-600 hover:bg-blue-100"
                           }`}
                         >
-                          {followingUids.includes(post.uid)
-                            ? <><UserCheck className="h-3 w-3" /> Following</>
-                            : <><UserPlus className="h-3 w-3" /> Follow</>}
+                          {followingUids.includes(post.uid) ? (
+                            <>
+                              <UserCheck className="h-3 w-3" /> Following
+                            </>
+                          ) : (
+                            <>
+                              <UserPlus className="h-3 w-3" /> Follow
+                            </>
+                          )}
                         </button>
                       )}
                     </div>
@@ -384,9 +486,17 @@ export default function CommunityPage() {
                     {/* Media */}
                     <div className="w-full bg-black">
                       {post.mediaType === "video" ? (
-                        <video src={post.mediaUrl} controls className="w-full max-h-96 object-contain" />
+                        <video
+                          src={post.mediaUrl}
+                          controls
+                          className="w-full max-h-96 object-contain"
+                        />
                       ) : (
-                        <img src={post.mediaUrl} alt={post.caption} className="w-full max-h-96 object-contain" />
+                        <img
+                          src={post.mediaUrl}
+                          alt={post.caption}
+                          className="w-full max-h-96 object-contain"
+                        />
                       )}
                     </div>
 
@@ -395,14 +505,28 @@ export default function CommunityPage() {
                       <button
                         onClick={() => handleLike(post._id)}
                         className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                          user && post.likes.includes(user.uid) ? "text-red-500" : "text-gray-500 hover:text-red-500"
+                          user && post.likes.includes(user.uid)
+                            ? "text-red-500"
+                            : "text-gray-500 hover:text-red-500"
                         }`}
                       >
-                        <Heart className="h-5 w-5" fill={user && post.likes.includes(user.uid) ? "currentColor" : "none"} />
+                        <Heart
+                          className="h-5 w-5"
+                          fill={
+                            user && post.likes.includes(user.uid)
+                              ? "currentColor"
+                              : "none"
+                          }
+                        />
                         {post.likes.length}
                       </button>
                       <button
-                        onClick={() => setshowComments((prev) => ({ ...prev, [post._id]: !prev[post._id] }))}
+                        onClick={() =>
+                          setshowComments((prev) => ({
+                            ...prev,
+                            [post._id]: !prev[post._id],
+                          }))
+                        }
                         className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-blue-600"
                       >
                         <MessageCircle className="h-5 w-5" />
@@ -411,7 +535,10 @@ export default function CommunityPage() {
                       {/* Share button now opens friend-picker modal */}
                       <button
                         onClick={() => {
-                          if (!user) { toast.error("Please login to share."); return; }
+                          if (!user) {
+                            toast.error("Please login to share.");
+                            return;
+                          }
                           setshareModalPost(post);
                         }}
                         className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-green-600"
@@ -425,7 +552,8 @@ export default function CommunityPage() {
                     {post.caption && (
                       <div className="px-4 pb-2">
                         <span className="text-sm text-gray-800">
-                          <span className="font-semibold">{post.name}</span> {post.caption}
+                          <span className="font-semibold">{post.name}</span>{" "}
+                          {post.caption}
                         </span>
                       </div>
                     )}
@@ -436,12 +564,17 @@ export default function CommunityPage() {
                         {post.comments.map((c) => (
                           <div key={c._id} className="flex items-start gap-2">
                             <img
-                              src={c.photo || `https://ui-avatars.com/api/?name=${c.name}&background=3b82f6&color=fff`}
+                              src={
+                                c.photo ||
+                                `https://ui-avatars.com/api/?name=${c.name}&background=3b82f6&color=fff`
+                              }
                               alt={c.name}
                               className="w-7 h-7 rounded-full"
                             />
                             <div className="bg-gray-50 rounded-xl px-3 py-1.5 text-sm flex-1">
-                              <span className="font-semibold text-gray-800">{c.name}</span>{" "}
+                              <span className="font-semibold text-gray-800">
+                                {c.name}
+                              </span>{" "}
                               <span className="text-gray-600">{c.text}</span>
                             </div>
                           </div>
@@ -449,19 +582,32 @@ export default function CommunityPage() {
                         {user && (
                           <div className="flex items-center gap-2 mt-2">
                             <img
-                              src={user.photo || `https://ui-avatars.com/api/?name=${user.name}&background=3b82f6&color=fff`}
+                              src={
+                                user.photo ||
+                                `https://ui-avatars.com/api/?name=${user.name}&background=3b82f6&color=fff`
+                              }
                               alt={user.name}
                               className="w-7 h-7 rounded-full"
                             />
                             <input
                               type="text"
                               value={commentText[post._id] || ""}
-                              onChange={(e) => setcommentText((prev) => ({ ...prev, [post._id]: e.target.value }))}
-                              onKeyDown={(e) => e.key === "Enter" && handleComment(post._id)}
+                              onChange={(e) =>
+                                setcommentText((prev) => ({
+                                  ...prev,
+                                  [post._id]: e.target.value,
+                                }))
+                              }
+                              onKeyDown={(e) =>
+                                e.key === "Enter" && handleComment(post._id)
+                              }
                               placeholder="Add a comment..."
                               className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-4 py-1.5 text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
-                            <button onClick={() => handleComment(post._id)} className="text-blue-600 text-sm font-semibold hover:text-blue-700">
+                            <button
+                              onClick={() => handleComment(post._id)}
+                              className="text-blue-600 text-sm font-semibold hover:text-blue-700"
+                            >
                               Post
                             </button>
                           </div>
@@ -479,16 +625,23 @@ export default function CommunityPage() {
         {activeTab === "people" && (
           <div className="space-y-3">
             {!user ? (
-              <p className="text-center text-gray-400 py-10">Please login to see people.</p>
+              <p className="text-center text-gray-400 py-10">
+                Please login to see people.
+              </p>
             ) : usersLoading ? (
               <div className="flex justify-center py-20">
                 <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600"></div>
               </div>
             ) : allUsers.length === 0 ? (
-              <p className="text-center text-gray-400 py-10">No other users found yet.</p>
+              <p className="text-center text-gray-400 py-10">
+                No other users found yet.
+              </p>
             ) : (
               allUsers.map((u) => (
-                <div key={u._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center justify-between">
+                <div
+                  key={u._id}
+                  className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center justify-between"
+                >
                   <div className="flex items-center gap-3">
                     <img
                       src={`https://ui-avatars.com/api/?name=${u.name || u.email}&background=3b82f6&color=fff`}
@@ -496,10 +649,14 @@ export default function CommunityPage() {
                       className="w-10 h-10 rounded-full"
                     />
                     <div>
-                      <p className="font-semibold text-gray-800 text-sm">{u.name || u.email?.split("@")[0]}</p>
+                      <p className="font-semibold text-gray-800 text-sm">
+                        {u.name || u.email?.split("@")[0]}
+                      </p>
                       <p className="text-xs text-gray-400">{u.email}</p>
                       {friendUids.includes(u.firebaseUid) && (
-                        <span className="text-xs text-green-600 font-medium">✓ Friends</span>
+                        <span className="text-xs text-green-600 font-medium">
+                          ✓ Friends
+                        </span>
                       )}
                     </div>
                   </div>
@@ -511,9 +668,15 @@ export default function CommunityPage() {
                         : "bg-blue-50 text-blue-600 hover:bg-blue-100"
                     }`}
                   >
-                    {followingUids.includes(u.firebaseUid)
-                      ? <><UserCheck className="h-3 w-3" /> Following</>
-                      : <><UserPlus className="h-3 w-3" /> Follow</>}
+                    {followingUids.includes(u.firebaseUid) ? (
+                      <>
+                        <UserCheck className="h-3 w-3" /> Following
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="h-3 w-3" /> Follow
+                      </>
+                    )}
                   </button>
                 </div>
               ))
@@ -525,7 +688,9 @@ export default function CommunityPage() {
         {activeTab === "inbox" && (
           <div className="space-y-4">
             {!user ? (
-              <p className="text-center text-gray-400 py-10">Please login to see your inbox.</p>
+              <p className="text-center text-gray-400 py-10">
+                Please login to see your inbox.
+              </p>
             ) : inboxLoading ? (
               <div className="flex justify-center py-20">
                 <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600"></div>
@@ -537,44 +702,67 @@ export default function CommunityPage() {
               </div>
             ) : (
               inboxMessages.map((msg) => (
-                <div key={msg._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div
+                  key={msg._id}
+                  className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+                >
                   {/* Sent by */}
                   <div className="flex items-center gap-2 px-4 pt-3 pb-2">
                     <img
-                      src={msg.fromPhoto || `https://ui-avatars.com/api/?name=${msg.fromName}&background=3b82f6&color=fff`}
+                      src={
+                        msg.fromPhoto ||
+                        `https://ui-avatars.com/api/?name=${msg.fromName}&background=3b82f6&color=fff`
+                      }
                       alt={msg.fromName}
                       className="w-7 h-7 rounded-full"
                     />
                     <p className="text-sm text-gray-600">
-                      <span className="font-semibold text-gray-800">{msg.fromName}</span> shared a post with you
+                      <span className="font-semibold text-gray-800">
+                        {msg.fromName}
+                      </span>{" "}
+                      shared a post with you
                     </p>
-                    <span className="ml-auto text-xs text-gray-400">{formatDate(msg.createdAt)}</span>
+                    <span className="ml-auto text-xs text-gray-400">
+                      {formatDate(msg.createdAt)}
+                    </span>
                   </div>
                   {/* Post preview */}
                   {msg.postId ? (
                     <>
                       <div className="w-full bg-black">
                         {msg.postId.mediaType === "video" ? (
-                          <video src={msg.postId.mediaUrl} controls className="w-full max-h-72 object-contain" />
+                          <video
+                            src={msg.postId.mediaUrl}
+                            controls
+                            className="w-full max-h-72 object-contain"
+                          />
                         ) : (
-                          <img src={msg.postId.mediaUrl} alt={msg.postId.caption} className="w-full max-h-72 object-contain" />
+                          <img
+                            src={msg.postId.mediaUrl}
+                            alt={msg.postId.caption}
+                            className="w-full max-h-72 object-contain"
+                          />
                         )}
                       </div>
                       {msg.postId.caption && (
                         <div className="px-4 py-2 text-sm text-gray-700">
-                          <span className="font-semibold">{msg.postId.name}</span> {msg.postId.caption}
+                          <span className="font-semibold">
+                            {msg.postId.name}
+                          </span>{" "}
+                          {msg.postId.caption}
                         </div>
                       )}
                     </>
                   ) : (
-                    <p className="px-4 pb-3 text-sm text-gray-400">Post no longer available.</p>
+                    <p className="px-4 pb-3 text-sm text-gray-400">
+                      Post no longer available.
+                    </p>
                   )}
                 </div>
               ))
             )}
           </div>
         )}
-
       </div>
 
       {/* ── Share-to-Friend Modal ── */}
@@ -582,7 +770,9 @@ export default function CommunityPage() {
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
             <div className="flex items-center justify-between p-5 border-b">
-              <h2 className="text-lg font-bold text-gray-900">Send to Friend</h2>
+              <h2 className="text-lg font-bold text-gray-900">
+                Send to Friend
+              </h2>
               <button onClick={() => setshareModalPost(null)}>
                 <X className="h-5 w-5 text-gray-500" />
               </button>
@@ -590,18 +780,24 @@ export default function CommunityPage() {
             <div className="p-4 space-y-3 max-h-80 overflow-y-auto">
               {friendUsers.length === 0 ? (
                 <p className="text-center text-gray-400 py-6 text-sm">
-                  No mutual friends yet. Follow someone and wait for them to follow back!
+                  No mutual friends yet. Follow someone and wait for them to
+                  follow back!
                 </p>
               ) : (
                 friendUsers.map((u) => (
-                  <div key={u._id} className="flex items-center justify-between">
+                  <div
+                    key={u._id}
+                    className="flex items-center justify-between"
+                  >
                     <div className="flex items-center gap-3">
                       <img
                         src={`https://ui-avatars.com/api/?name=${u.name || u.email}&background=3b82f6&color=fff`}
                         alt={u.name}
                         className="w-9 h-9 rounded-full"
                       />
-                      <p className="text-sm font-medium text-gray-800">{u.name || u.email?.split("@")[0]}</p>
+                      <p className="text-sm font-medium text-gray-800">
+                        {u.name || u.email?.split("@")[0]}
+                      </p>
                     </div>
                     <button
                       onClick={() => handleSendToFriend(u.firebaseUid)}
@@ -625,17 +821,25 @@ export default function CommunityPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
             <div className="flex items-center justify-between p-5 border-b">
               <h2 className="text-lg font-bold text-gray-900">Create Post</h2>
-              <button onClick={() => { setshowCreateModal(false); setmediaPreview(null); setmediaFile(null); }}>
+              <button
+                onClick={() => {
+                  setshowCreateModal(false);
+                  setmediaPreview(null);
+                  setmediaFile(null);
+                }}
+              >
                 <X className="h-5 w-5 text-gray-500" />
               </button>
             </div>
             <div className="p-5 space-y-4">
-              <div className={`text-xs px-3 py-2 rounded-lg font-medium ${postLimit === 0 ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"}`}>
+              <div
+                className={`text-xs px-3 py-2 rounded-lg font-medium ${postLimit === 0 ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"}`}
+              >
                 {postLimit === 0
                   ? "⚠️ You need at least 1 mutual friend to post."
                   : postLimit === Infinity
-                  ? `✓ You have ${friendCount} friends — unlimited posts!`
-                  : `✓ You have ${friendCount} friend(s) — ${postLimit} post(s)/day allowed.`}
+                    ? `✓ You have ${friendCount} friends — unlimited posts!`
+                    : `✓ You have ${friendCount} friend(s) — ${postLimit} post(s)/day allowed.`}
               </div>
               <div
                 onClick={() => fileRef.current?.click()}
@@ -643,9 +847,17 @@ export default function CommunityPage() {
               >
                 {mediaPreview ? (
                   mediaFile?.type.startsWith("video/") ? (
-                    <video src={mediaPreview} className="w-full max-h-48 rounded-lg object-contain" controls />
+                    <video
+                      src={mediaPreview}
+                      className="w-full max-h-48 rounded-lg object-contain"
+                      controls
+                    />
                   ) : (
-                    <img src={mediaPreview} alt="preview" className="w-full max-h-48 rounded-lg object-contain" />
+                    <img
+                      src={mediaPreview}
+                      alt="preview"
+                      className="w-full max-h-48 rounded-lg object-contain"
+                    />
                   )
                 ) : (
                   <div className="space-y-2">
@@ -653,12 +865,22 @@ export default function CommunityPage() {
                       <ImageIcon className="h-8 w-8 text-gray-400" />
                       <VideoIcon className="h-8 w-8 text-gray-400" />
                     </div>
-                    <p className="text-gray-500 text-sm">Click to upload photo or video</p>
-                    <p className="text-gray-400 text-xs">JPG, PNG, GIF, MP4, MOV</p>
+                    <p className="text-gray-500 text-sm">
+                      Click to upload photo or video
+                    </p>
+                    <p className="text-gray-400 text-xs">
+                      JPG, PNG, GIF, MP4, MOV
+                    </p>
                   </div>
                 )}
               </div>
-              <input ref={fileRef} type="file" accept="image/*,video/*" onChange={handleMediaSelect} className="hidden" />
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*,video/*"
+                onChange={handleMediaSelect}
+                className="hidden"
+              />
               <textarea
                 value={caption}
                 onChange={(e) => setcaption(e.target.value)}
@@ -676,7 +898,9 @@ export default function CommunityPage() {
                     <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-white"></div>
                     Posting...
                   </div>
-                ) : "Share Post"}
+                ) : (
+                  "Share Post"
+                )}
               </button>
             </div>
           </div>
