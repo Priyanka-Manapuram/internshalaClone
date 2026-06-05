@@ -102,50 +102,69 @@ const Navbar = () => {
   ];
 
   const [pendingLang, setpendingLang] = useState<string | null>(null);
+  const [pendingEmail, setpendingEmail] = useState<string>("");
 
   const handleLangChange = async (code: string) => {
-    setshowLangMenu(false);
+  setshowLangMenu(false);
 
-    if (code === lang) return; // already selected
+  if (code === lang) return; // already selected
 
-    if (!user?.email) {
-      toast.error("Please login to change language.");
-      return;
-    }
-
+  // Ask for email if not logged in
+  if (!user?.email) {
+    const email = window.prompt("Enter your email to verify language change:");
+    if (!email) return;
+    
     try {
       await axios.post(
         "https://internshalaclone-jby6.onrender.com/api/auth/resend-otp",
-        { email: user.email },
+        { email }
       );
-      setpendingLang(code); // store which language user wants
+      setpendingLang(code);
+      setpendingEmail(email); // store email for verification
       setfrenchOtpModal(true);
       toast.info("OTP sent to your email. Verify to change language.");
     } catch (error) {
       toast.error("Failed to send OTP.");
     }
-  };
+    return;
+  }
+
+  // Logged in — use their account email
+  try {
+    await axios.post(
+      "https://internshalaclone-jby6.onrender.com/api/auth/resend-otp",
+      { email: user.email }
+    );
+    setpendingLang(code);
+    setpendingEmail(user.email);
+    setfrenchOtpModal(true);
+    toast.info("OTP sent to your email. Verify to change language.");
+  } catch (error) {
+    toast.error("Failed to send OTP.");
+  }
+};
   const handleFrenchOtpVerify = async () => {
-    if (!frenchOtp || frenchOtp.length !== 6) return;
-    try {
-      setfrenchOtpLoading(true);
-      await axios.post(
-        "https://internshalaclone-jby6.onrender.com/api/auth/verify-otp",
-        { email: user?.email, otp: frenchOtp },
-      );
-      if (pendingLang) {
-        changeLang(pendingLang as any); // ← apply whatever language was selected
-        setpendingLang(null);
-      }
-      setfrenchOtpModal(false);
-      setfrenchOtp("");
-      toast.success(t("otpVerified"));
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Invalid OTP.");
-    } finally {
-      setfrenchOtpLoading(false);
+  if (!frenchOtp || frenchOtp.length !== 6) return;
+  try {
+    setfrenchOtpLoading(true);
+    await axios.post(
+      "https://internshalaclone-jby6.onrender.com/api/auth/verify-otp",
+      { email: pendingEmail, otp: frenchOtp }
+    );
+    if (pendingLang) {
+      changeLang(pendingLang as any);
+      setpendingLang(null);
     }
-  };
+    setfrenchOtpModal(false);
+    setfrenchOtp("");
+    setpendingEmail("");
+    toast.success(t("otpVerified"));
+  } catch (error: any) {
+    toast.error(error?.response?.data?.message || "Invalid OTP.");
+  } finally {
+    setfrenchOtpLoading(false);
+  }
+};
 
   return (
     <nav className="bg-white shadow-md">
@@ -351,9 +370,8 @@ const Navbar = () => {
               Language Change Verification
             </h3>
             <p className="text-gray-500 text-sm mb-6">
-              Enter the OTP sent to <strong>{user?.email}</strong> to switch
-              language.
-            </p>
+  Enter the OTP sent to <strong>{pendingEmail}</strong> to switch language.
+</p>
             <input
               type="text"
               maxLength={6}
