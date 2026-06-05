@@ -6,10 +6,6 @@ import { toast } from "react-toastify";
 import { useRouter } from "next/router";
 import { FileText, Lock, Download, Loader2 } from "lucide-react";
 
-declare global {
-  interface Window { Razorpay: any; }
-}
-
 const steps = ["Details", "Verify OTP", "Payment", "Resume"];
 
 export default function ResumePage() {
@@ -112,58 +108,72 @@ export default function ResumePage() {
   };
 
   const handlePayment = async () => {
-    try {
-      setloading(true);
-      const res = await axios.post(
-        "https://internshalaclone-jby6.onrender.com/api/resume/create-order",
-        { uid: user?.uid, email: user?.email }
-      );
+  if (!user) {
+    toast.error("Please login first.");
+    return;
+  }
 
-      const { orderId, amount, currency } = res.data;
+  try {
+    setloading(true);
+    const res = await axios.post(
+      "https://internshalaclone-jby6.onrender.com/api/resume/create-order",
+      { uid: user.uid, email: user.email }
+    );
 
-      const options = {
-        key: "rzp_test_SxAPCkyCxYll4Y",
-        amount,
-        currency,
-        name: "Internarea",
-        description: "Resume Creation — ₹50",
-        order_id: orderId,
-        handler: async (response: any) => {
-          try {
-            const verifyRes = await axios.post(
-              "https://internshalaclone-jby6.onrender.com/api/resume/verify-payment",
-              {
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                uid: user?.uid,
-                email: user?.email,
-                resumeData: form,
-              }
-            );
+    const { orderId, amount, currency } = res.data;
 
-            if (verifyRes.data.success) {
-              setexistingResume(verifyRes.data.resume);
-              setstep(3);
-              toast.success("Resume created successfully!");
+    const options = {
+      key: "rzp_test_SxAPCkyCxYll4Y",
+      amount,
+      currency,
+      name: "Internarea",
+      description: "Resume Creation — ₹50",
+      order_id: orderId,
+      handler: async (response: any) => {
+        try {
+          const verifyRes = await axios.post(
+            "https://internshalaclone-jby6.onrender.com/api/resume/verify-payment",
+            {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              uid: user.uid,
+              email: user.email,
+              resumeData: form,
             }
-          } catch (error: any) {
-            toast.error("Payment verification failed.");
-          }
-        },
-        prefill: { name: user?.name || "", email: user?.email || "" },
-        theme: { color: "#2563eb" },
-        modal: { ondismiss: () => setloading(false) },
-      };
+          );
 
-      const rzp = new window.Razorpay(options);
+          if (verifyRes.data.success) {
+            setexistingResume(verifyRes.data.resume);
+            setstep(3);
+            toast.success("Resume created successfully!");
+          }
+        } catch {
+          toast.error("Payment verification failed.");
+        }
+      },
+      prefill: {
+        name: user.name ?? "",
+        email: user.email ?? "",
+      },
+      theme: { color: "#2563eb" },
+      modal: {
+        ondismiss: () => setloading(false),
+      },
+    };
+
+    if (typeof window !== "undefined" && (window as any).Razorpay) {
+      const rzp = new (window as any).Razorpay(options);
       rzp.open();
-    } catch (error: any) {
-      toast.error("Could not initiate payment.");
-    } finally {
+    } else {
+      toast.error("Payment gateway not loaded. Please refresh.");
       setloading(false);
     }
-  };
+  } catch (error: any) {
+    toast.error("Could not initiate payment.");
+    setloading(false);
+  }
+};
 
   const handleDownload = () => {
     const element = resumeRef.current;

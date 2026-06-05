@@ -7,7 +7,6 @@ import { useRouter } from "next/router";
 import { CheckCircle, Zap, Star, Crown, Shield } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
-const { t } = useLanguage();
 const PLANS = [
   {
     name: "Free",
@@ -48,19 +47,36 @@ const PLANS = [
 ];
 
 const colorMap: any = {
-  gray:   { bg: "bg-gray-50",   border: "border-gray-200", btn: "bg-gray-600 hover:bg-gray-700",   badge: "bg-gray-100 text-gray-600" },
-  orange: { bg: "bg-orange-50", border: "border-orange-200", btn: "bg-orange-500 hover:bg-orange-600", badge: "bg-orange-100 text-orange-600" },
-  blue:   { bg: "bg-blue-50",   border: "border-blue-300",  btn: "bg-blue-600 hover:bg-blue-700",   badge: "bg-blue-100 text-blue-600" },
-  yellow: { bg: "bg-yellow-50", border: "border-yellow-300", btn: "bg-yellow-500 hover:bg-yellow-600", badge: "bg-yellow-100 text-yellow-700" },
+  gray: {
+    bg: "bg-gray-50",
+    border: "border-gray-200",
+    btn: "bg-gray-600 hover:bg-gray-700",
+    badge: "bg-gray-100 text-gray-600",
+  },
+  orange: {
+    bg: "bg-orange-50",
+    border: "border-orange-200",
+    btn: "bg-orange-500 hover:bg-orange-600",
+    badge: "bg-orange-100 text-orange-600",
+  },
+  blue: {
+    bg: "bg-blue-50",
+    border: "border-blue-300",
+    btn: "bg-blue-600 hover:bg-blue-700",
+    badge: "bg-blue-100 text-blue-600",
+  },
+  yellow: {
+    bg: "bg-yellow-50",
+    border: "border-yellow-300",
+    btn: "bg-yellow-500 hover:bg-yellow-600",
+    badge: "bg-yellow-100 text-yellow-700",
+  },
 };
-
-declare global {
-  interface Window { Razorpay: any; }
-}
 
 export default function SubscriptionPage() {
   const user = useSelector(selectuser);
   const router = useRouter();
+  const { t } = useLanguage();
   const [currentPlan, setcurrentPlan] = useState<any>(null);
   const [loading, setloading] = useState(true);
   const [payingPlan, setpayingPlan] = useState<string | null>(null);
@@ -68,27 +84,27 @@ export default function SubscriptionPage() {
   useEffect(() => {
     if (!user) return;
     fetchMyPlan();
-    loadRazorpay();
+
+    // Load Razorpay script only on client side
+    if (typeof window !== "undefined") {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      document.body.appendChild(script);
+    }
   }, [user]);
 
   const fetchMyPlan = async () => {
-  try {
-    const res = await axios.get(
-      `https://internshalaclone-jby6.onrender.com/api/subscription/my-plan/${user?.uid}`,
-      { params: { email: user?.email, name: user?.name } }
-    );
-    setcurrentPlan(res.data.subscription);
-  } catch (error) {
-    console.error(error);
-  } finally {
-    setloading(false);
-  }
-};
-
-  const loadRazorpay = () => {
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    document.body.appendChild(script);
+    try {
+      const res = await axios.get(
+        `https://internshalaclone-jby6.onrender.com/api/subscription/my-plan/${user?.uid}`,
+        { params: { email: user?.email, name: user?.name } },
+      );
+      setcurrentPlan(res.data.subscription);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setloading(false);
+    }
   };
 
   const handleSelectPlan = async (plan: any) => {
@@ -96,12 +112,10 @@ export default function SubscriptionPage() {
       toast.error("Please login first.");
       return;
     }
-
     if (plan.name === "Free") {
       toast.info("You are already on the Free plan.");
       return;
     }
-
     if (currentPlan?.plan === plan.name) {
       toast.info(`You are already on the ${plan.name} plan.`);
       return;
@@ -112,12 +126,7 @@ export default function SubscriptionPage() {
 
       const res = await axios.post(
         "https://internshalaclone-jby6.onrender.com/api/subscription/create-order",
-        {
-          uid: user.uid,
-          email: user.email,
-          name: user.name,
-          plan: plan.name,
-        }
+        { uid: user.uid, email: user.email, name: user.name, plan: plan.name },
       );
 
       const { orderId, amount, currency } = res.data;
@@ -141,29 +150,35 @@ export default function SubscriptionPage() {
                 email: user.email,
                 name: user.name,
                 plan: plan.name,
-              }
+              },
             );
-
             if (verifyRes.data.success) {
-              toast.success(`${plan.name} plan activated! Invoice sent to your email.`);
-              router.push(`/subscription/success?plan=${plan.name}&invoice=${verifyRes.data.invoiceNumber}`);
+              toast.success(
+                `${plan.name} plan activated! Invoice sent to your email.`,
+              );
+              router.push(
+                `/subscription/success?plan=${plan.name}&invoice=${verifyRes.data.invoiceNumber}`,
+              );
             }
-          } catch (error: any) {
+          } catch {
             toast.error("Payment verification failed.");
           }
         },
-        prefill: {
-          name: user.name || "",
-          email: user.email || "",
-        },
+        prefill: { name: user.name || "", email: user.email || "" },
         theme: { color: "#2563eb" },
-        modal: {
-          ondismiss: () => setpayingPlan(null),
-        },
+        modal: { ondismiss: () => setpayingPlan(null) },
       };
 
-      const rzp = new window.Razorpay(options);
-      rzp.open();
+      // Safe client-side only Razorpay call
+      if (typeof window !== "undefined" && (window as any).Razorpay) {
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+      } else {
+        toast.error(
+          "Payment gateway not loaded. Please refresh and try again.",
+        );
+        setpayingPlan(null);
+      }
     } catch (error: any) {
       if (error?.response?.status === 403) {
         toast.error("Payments only allowed between 10:00 AM – 11:00 AM IST.");
@@ -177,26 +192,24 @@ export default function SubscriptionPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-extrabold text-gray-900">
-           {t("choosePlan")}
+            {t("choosePlan")}
           </h1>
-          <p className="mt-3 text-lg text-gray-500">
-            {t("upgradeText")}
-          </p>
+          <p className="mt-3 text-lg text-gray-500">{t("upgradeText")}</p>
           {currentPlan && (
             <div className="mt-4 inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-full px-4 py-2 text-sm text-blue-700 font-medium">
               {t("currentPlan")}: <strong>{currentPlan.plan}</strong> —{" "}
-              {currentPlan.applicationsUsed}/{currentPlan.plan === "Gold" ? "∞" : currentPlan.applicationLimit} {t("applicationsUsed")}
+              {currentPlan.applicationsUsed}/
+              {currentPlan.plan === "Gold" ? "∞" : currentPlan.applicationLimit}{" "}
+              {t("applicationsUsed")}
             </div>
           )}
           <p className="mt-2 text-xs text-red-500 font-medium">
-            ⏰  {t("paymentsNote")}
+            ⏰ {t("paymentsNote")}
           </p>
         </div>
 
-        {/* Plans Grid */}
         {loading ? (
           <div className="flex justify-center py-20">
             <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600"></div>
@@ -223,7 +236,6 @@ export default function SubscriptionPage() {
                       </span>
                     </div>
                   )}
-
                   {isCurrentPlan && (
                     <div className="absolute -top-3 right-4">
                       <span className="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">
@@ -231,37 +243,43 @@ export default function SubscriptionPage() {
                       </span>
                     </div>
                   )}
-
                   <div className="flex items-center gap-3 mb-4">
                     <div className={`p-2 rounded-lg ${colors.badge}`}>
                       <Icon className="h-5 w-5" />
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
+                    <h3 className="text-lg font-bold text-gray-900">
+                      {plan.name}
+                    </h3>
                   </div>
-
                   <div className="mb-4">
                     {plan.price === 0 ? (
-                      <span className="text-3xl font-extrabold text-gray-900">Free</span>
+                      <span className="text-3xl font-extrabold text-gray-900">
+                        Free
+                      </span>
                     ) : (
                       <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-extrabold text-gray-900">₹{plan.price}</span>
+                        <span className="text-3xl font-extrabold text-gray-900">
+                          ₹{plan.price}
+                        </span>
                         <span className="text-gray-500 text-sm">/month</span>
                       </div>
                     )}
                     <p className="text-sm text-gray-500 mt-1">
-                      {plan.limit === 999999 ? "Unlimited" : plan.limit} applications
+                      {plan.limit === 999999 ? "Unlimited" : plan.limit}{" "}
+                      applications
                     </p>
                   </div>
-
                   <ul className="space-y-2 mb-6 flex-1">
                     {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-center gap-2 text-sm text-gray-600">
+                      <li
+                        key={feature}
+                        className="flex items-center gap-2 text-sm text-gray-600"
+                      >
                         <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
                         {feature}
                       </li>
                     ))}
                   </ul>
-
                   <button
                     onClick={() => handleSelectPlan(plan)}
                     disabled={isCurrentPlan || isPaying}
