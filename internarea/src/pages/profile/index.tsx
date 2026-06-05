@@ -42,7 +42,7 @@ const index = () => {
   ).length;
 
   const acceptedCount = userApplications.filter(
-    (app: any) => app.status?.toLowerCase() === "approved"
+    (app: any) => app.status?.toLowerCase() === "accepted"
   ).length;
 
   return (
