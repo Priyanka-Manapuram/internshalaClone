@@ -5,7 +5,9 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { useRouter } from "next/router";
 import { CheckCircle, Zap, Star, Crown, Shield } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
+const { t } = useLanguage();
 const PLANS = [
   {
     name: "Free",
@@ -175,19 +177,19 @@ export default function SubscriptionPage() {
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-extrabold text-gray-900">
-            Choose Your Plan
+           {t("choosePlan")}
           </h1>
           <p className="mt-3 text-lg text-gray-500">
-            Upgrade to apply to more internships and jobs
+            {t("upgradeText")}
           </p>
           {currentPlan && (
             <div className="mt-4 inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-full px-4 py-2 text-sm text-blue-700 font-medium">
-              Current plan: <strong>{currentPlan.plan}</strong> —{" "}
-              {currentPlan.applicationsUsed}/{currentPlan.plan === "Gold" ? "∞" : currentPlan.applicationLimit} applications used
+              {t("currentPlan")}: <strong>{currentPlan.plan}</strong> —{" "}
+              {currentPlan.applicationsUsed}/{currentPlan.plan === "Gold" ? "∞" : currentPlan.applicationLimit} {t("applicationsUsed")}
             </div>
           )}
           <p className="mt-2 text-xs text-red-500 font-medium">
-            ⏰ Payments accepted only between 10:00 AM – 11:00 AM IST
+            ⏰  {t("paymentsNote")}
           </p>
         </div>
 
