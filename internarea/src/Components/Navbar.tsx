@@ -219,7 +219,7 @@ const Navbar = () => {
           {!otpPending && (
             <div className="flex items-center space-x-4 relative">
               {user ? (
-                <div className="relative flex items-center gap-2">
+                <div className="relative flex items-center gap-3 h-10">
                   <Link
                     href="/subscription"
                     className="text-xs font-semibold px-3 py-1.5 rounded-full border border-blue-500 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white transition-colors duration-200"
@@ -234,7 +234,7 @@ const Navbar = () => {
                           `https://ui-avatars.com/api/?name=${user?.name}&background=3b82f6&color=fff`
                         }
                         alt="profile"
-                        className="h-8 w-8 rounded-full object-cover ring-2 ring-blue-100"
+                        className="w-8 h-8 min-w-8 min-h-8 max-w-8 max-h-8 rounded-full object-cover flex-shrink-0"
                       />
                     </Link>
                   </button>
