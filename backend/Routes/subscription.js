@@ -170,13 +170,13 @@ router.post("/verify-payment", async (req, res) => {
 // ─── POST /api/subscription/check-limit ──────────────────────────────────────
 router.post("/check-limit", async (req, res) => {
   try {
-    const { uid } = req.body;
+    const { uid, email } = req.body;  // ← add email
     let subscription = await Subscription.findOne({ uid });
 
     if (!subscription) {
       subscription = await Subscription.create({
         uid,
-        email: "",
+        email: email || "unknown@email.com",  // ← use email from body
         plan: "Free",
         applicationLimit: 1,
         applicationsUsed: 0,

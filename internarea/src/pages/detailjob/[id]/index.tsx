@@ -164,9 +164,9 @@ const index = () => {
     try {
       // Step 1 — check limit before applying
       const limitRes = await axios.post(
-        "https://internshalaclone-jby6.onrender.com/api/subscription/check-limit",
-        { uid: user.uid },
-      );
+  "https://internshalaclone-jby6.onrender.com/api/subscription/check-limit",
+  { uid: user.uid, email: user.email || "" }  // ← add email
+);
 
       if (!limitRes.data.canApply) {
         toast.error(
