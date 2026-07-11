@@ -21,6 +21,7 @@ export default function ResumePage() {
   const [existingResume, setexistingResume] = useState<any>(null);
   const [isPremium, setisPremium] = useState(false);
   const [checkingPlan, setcheckingPlan] = useState(true);
+  const [aiLoading, setaiLoading] = useState(false);
 
   const [form, setform] = useState({
     name: "",
@@ -204,6 +205,35 @@ export default function ResumePage() {
 
   const resume = existingResume || form;
 
+  const handleGenerateSummary = async () => {
+  if (!form.skills && !form.experience) {
+    toast.error("Add your skills or experience first, then generate a summary.");
+    return;
+  }
+  try {
+    setaiLoading(true);
+    const res = await axios.post(
+      "https://internshalaclone-jby6.onrender.com/api/resume/generate-summary",
+      {
+        name: form.name,
+        qualification: form.qualification,
+        institution: form.institution,
+        graduationYear: form.graduationYear,
+        experience: form.experience,
+        skills: form.skills,
+      }
+    );
+    if (res.data.success) {
+      setform((f) => ({ ...f, summary: res.data.summary }));
+      toast.success("Summary generated!");
+    }
+  } catch (error: any) {
+    toast.error(error?.response?.data?.message || "Failed to generate summary.");
+  } finally {
+    setaiLoading(false);
+  }
+};
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -294,24 +324,47 @@ export default function ResumePage() {
               </div>
             ))}
 
-            {[
-              { label: "Professional Summary", key: "summary" },
-              { label: "Qualification (e.g. B.Tech Computer Science)", key: "qualification" },
-              { label: "Institution", key: "institution" },
-              { label: "Graduation Year", key: "graduationYear" },
-              { label: "Experience", key: "experience" },
-              { label: "Skills (comma separated)", key: "skills" },
-            ].map(({ label, key }) => (
-              <div key={key}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-                <textarea
-                  value={(form as any)[key]}
-                  onChange={(e) => setform({ ...form, [key]: e.target.value })}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            ))}
+            <div>
+  <div className="flex items-center justify-between mb-1">
+    <label className="block text-sm font-medium text-gray-700">Professional Summary</label>
+    <button
+      type="button"
+      onClick={handleGenerateSummary}
+      disabled={aiLoading}
+      className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-50"
+    >
+      {aiLoading ? (
+        <Loader2 className="animate-spin h-3.5 w-3.5" />
+      ) : (
+        "✨ Generate with AI"
+      )}
+    </button>
+  </div>
+  <textarea
+    value={form.summary}
+    onChange={(e) => setform({ ...form, summary: e.target.value })}
+    rows={3}
+    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+  />
+</div>
+
+{[
+  { label: "Qualification (e.g. B.Tech Computer Science)", key: "qualification" },
+  { label: "Institution", key: "institution" },
+  { label: "Graduation Year", key: "graduationYear" },
+  { label: "Experience", key: "experience" },
+  { label: "Skills (comma separated)", key: "skills" },
+].map(({ label, key }) => (
+  <div key={key}>
+    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+    <textarea
+      value={(form as any)[key]}
+      onChange={(e) => setform({ ...form, [key]: e.target.value })}
+      rows={3}
+      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+    />
+  </div>
+))}
 
             <button
               onClick={handleSendOtp}
