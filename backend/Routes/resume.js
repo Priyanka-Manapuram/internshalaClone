@@ -6,6 +6,7 @@ const Resume = require("../Model/Resume");
 const Subscription = require("../Model/Subscription");
 const Otp = require("../Model/Otp");
 const { generateOtp, sendOtpEmail } = require("../utils/sendOtp");
+const axios = require("axios");
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -142,6 +143,53 @@ router.get("/:uid", async (req, res) => {
   } catch (error) {
     console.error("resume get error:", error);
     return res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// ─── POST /api/resume/generate-summary ─────────────────────────
+router.post("/generate-summary", async (req, res) => {
+  try {
+    const { name, qualification, institution, graduationYear, experience, skills } = req.body;
+
+    if (!skills && !experience) {
+      return res.status(400).json({
+        success: false,
+        message: "Please add at least skills or experience before generating a summary.",
+      });
+    }
+
+    const prompt = `You are a resume-writing assistant. Based on the details below, write ONLY the final resume summary text — no explanations, no meta-commentary, no formatting notes, no line-count discussion. Output exactly 3-4 sentences, under 60 words total, third person, no first-person pronouns.
+
+Name: ${name || "N/A"}
+Qualification: ${qualification || "N/A"}
+Institution: ${institution || "N/A"}
+Graduation Year: ${graduationYear || "N/A"}
+Experience: ${experience || "N/A"}
+Skills: ${skills || "N/A"}
+
+Resume Summary:`;
+
+    const geminiRes = await axios.post(
+  `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { 
+  maxOutputTokens: 400, 
+  temperature: 0.7,
+  thinkingConfig: { thinkingBudget: 0 }
+},
+      },
+      { headers: { "Content-Type": "application/json" } }
+    );
+
+    const summary = geminiRes.data.candidates[0].content.parts[0].text.trim();
+
+    return res.status(200).json({ success: true, summary });
+  } catch (error) {
+    console.error("resume generate-summary error:", error?.response?.data || error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to generate summary. Please try again.",
+    });
   }
 });
 
