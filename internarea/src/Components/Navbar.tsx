@@ -189,9 +189,7 @@ const Navbar = () => {
         <div className="flex justify-between h-16 items-center">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <a href="/" className="text-xl font-bold text-blue-600">
-              <img src={"/logo.png"} alt="logo" className="h-16" />
-            </a>
+            
           </div>
 
           {/* Navigation Links — hidden during OTP */}

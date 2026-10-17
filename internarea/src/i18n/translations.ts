@@ -24,7 +24,7 @@ export const translations = {
     upgradeText: "Upgrade to apply to more internships and jobs",
     currentPlan: "Current plan",
     applicationsUsed: "applications used",
-    paymentsNote: "Payments accepted only between 10:00 AM – 11:00 AM IST",
+    paymentsNote: "Payments accepted only between 9:00 AM – 8:00 PM IST",
     // Resume
     resumeTitle: "Resume Builder",
     resumeSubtitle: "Create a professional resume for ₹50",
