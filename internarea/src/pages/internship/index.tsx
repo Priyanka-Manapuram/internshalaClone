@@ -1,3 +1,4 @@
+import { useRouter } from 'next/router';
 import axios from 'axios';
 import { ArrowUpRight, Calendar, Clock, DollarSign, Filter, Pin, PlayCircle, X} from 'lucide-react';
 import Link from 'next/link';
@@ -57,18 +58,37 @@ const index=()=>{
     }
     fetchdata()
   },[])
-  useEffect(()=>{
-      const filtered = internshipData.filter((internship:any) => {
-      const matchesCategory = internship.category
-        .toLowerCase()
-        .includes(filter.category.toLowerCase());
-      const matchesLocation = internship.location
-        .toLowerCase()
-        .includes(filter.location.toLowerCase());
-      return matchesCategory && matchesLocation;
-    });
-    setfilteredInternships(filtered);
-    },[filter,internshipData]);
+  useEffect(() => {
+  const filtered = internshipData.filter((internship: any) => {
+    const category = String(internship.category ?? '');
+    const location = String(internship.location ?? '');
+
+    const matchesCategory = category
+      .toLowerCase()
+      .includes(filter.category.toLowerCase());
+
+    const matchesLocation = location
+      .toLowerCase()
+      .includes(filter.location.toLowerCase());
+
+    const searchableText = [
+      internship.title,
+      internship.company,
+      internship.category,
+      internship.location,
+      internship.stipend,
+      internship.description,
+    ]
+      .map((value) => String(value ?? '').toLowerCase())
+      .join(' ');
+
+    const matchesSearch = searchableText.includes(searchQuery);
+
+    return matchesCategory && matchesLocation && matchesSearch;
+  });
+
+  setfilteredInternships(filtered);
+}, [filter, internshipData, searchQuery]);
     const handlefilterchange = (e: any) => {
       const { name, value, type, checked } = e.target;
       setfilters((prev) => ({
@@ -84,6 +104,12 @@ const index=()=>{
       partTime: false,
       stipend: 50,
     });
+    const router = useRouter();
+
+const searchQuery =
+  typeof router.query.search === 'string'
+    ? router.query.search.trim().toLowerCase()
+    : '';
   };
 
   return (
