@@ -31,7 +31,10 @@ const Navbar = () => {
   const [langOtpLoading, setlangOtpLoading] = useState(false);
   const [pendingLang, setpendingLang] = useState<string | null>(null);
   const [pendingEmail, setpendingEmail] = useState<string>("");
-
+  const [searchText, setSearchText] = useState("");
+  const [searchType, setSearchType] = useState<"internship" | "jobs">(
+    "internship",
+  );
   const LANGUAGES = [
     { code: "en", label: "English" },
     { code: "es", label: "Español" },
@@ -152,6 +155,18 @@ const Navbar = () => {
     }
   };
 
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const query = searchText.trim();
+    if (!query) return;
+
+    router.push({
+      pathname: searchType === "jobs" ? "/jobs" : "/internship",
+      query: { search: query },
+    });
+  };
+
   // Language switcher — reused in both logged in and logged out
   const LangSwitcher = () => (
     <div className="relative">
@@ -190,6 +205,9 @@ const Navbar = () => {
           {/* Navigation Links — hidden during OTP */}
           {!otpPending && (
             <div className="hidden md:flex items-center space-x-8">
+              <Link href="/" className="text-gray-700 hover:text-blue-600">
+                Home
+              </Link>
               <button className="flex items-center space-x-1 text-gray-700 hover:text-blue-600">
                 <Link href={"/internship"}>
                   <span>{t("internships")}</span>
@@ -200,14 +218,38 @@ const Navbar = () => {
                   <span>{t("jobs")}</span>
                 </Link>
               </button>
-              <div className="flex items-center bg-gray-100 rounded-full px-4 py-2">
-                <Search size={16} className="text-black-400" />
+
+              <form
+                onSubmit={handleSearch}
+                className="flex items-center bg-gray-100 rounded-full px-4 py-2"
+              >
+                {/* Add the dropdown here */}
+                <select
+                  value={searchType}
+                  onChange={(e) =>
+                    setSearchType(e.target.value as "internship" | "jobs")
+                  }
+                  className="bg-transparent text-sm text-gray-700 focus:outline-none"
+                  aria-label="Search category"
+                >
+                  <option value="internship">Internships</option>
+                  <option value="jobs">Jobs</option>
+                </select>
+
+                {/* Existing Search button */}
+                <button type="submit" aria-label="Search">
+                  <Search size={16} className="text-gray-500" />
+                </button>
+
+                {/* Keep your existing input here */}
                 <input
                   type="text"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
                   placeholder={t("search")}
                   className="ml-2 bg-transparent focus:outline-none text-sm w-48"
                 />
-              </div>
+              </form>
             </div>
           )}
 

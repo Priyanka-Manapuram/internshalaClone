@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { ArrowUpRight, Calendar, Clock, DollarSign, Filter, Pin, PlayCircle, X } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
 
 
@@ -115,6 +116,12 @@ const index = () => {
     salary: 50,
     experience: "",
   });
+  const router = useRouter();
+
+const searchQuery =
+  typeof router.query.search === 'string'
+    ? router.query.search.trim().toLowerCase()
+    : '';
   const [filteredJobs,setjob]=useState<any>([])
   useEffect(()=>{
     const fetchdata=async()=>{
@@ -128,18 +135,42 @@ const index = () => {
     }
     fetchdata()
   },[])
-  useEffect(()=>{
-      const filtered = filteredJobs.filter((job:any) => {
-      const matchesCategory = job.category
-        .toLowerCase()
-        .includes(filter.category.toLowerCase());
-      const matchesLocation = job.location
-        .toLowerCase()
-        .includes(filter.location.toLowerCase());
-      return matchesCategory && matchesLocation;
-    });
-    setfilteredjobs(filtered);
-    },[filter,filteredJobs]);
+  
+useEffect(() => {
+  const filtered = filteredJobs.filter((job: any) => {
+    const matchesCategory = String(job.category || '')
+  .toLowerCase()
+  .includes(filter.category.toLowerCase());
+
+const matchesLocation = String(job.location || '')
+  .toLowerCase()
+  .includes(filter.location.toLowerCase());
+
+    const searchableText = [
+      job.title,
+      job.company,
+      job.category,
+      job.location,
+      job.CTC,
+      job.Experience,
+      job.aboutJob,
+      job.aboutCompany,
+      job.Whocanapply,
+      job.perks,
+      job.AdditionalInfo,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+
+    const matchesSearch = searchableText.includes(searchQuery);
+
+    return matchesCategory && matchesLocation && matchesSearch;
+  });
+
+  setfilteredjobs(filtered);
+}, [filter, filteredJobs, searchQuery]);
+
     const handlefilterchange = (e: any) => {
       const { name, value, type, checked } = e.target;
       setfilters((prev) => ({
