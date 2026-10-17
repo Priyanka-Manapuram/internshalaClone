@@ -35,22 +35,26 @@ import React, { useEffect, useState } from 'react'
 //     location: "Los Angeles",
 //   },
 // ];
-const index=()=>{
+const index = () => {
+  const router = useRouter();
+
   const searchQuery =
-  typeof router.query.search === 'string'
-    ? router.query.search.trim().toLowerCase()
-    : '';
-  };
+    typeof router.query.search === 'string'
+      ? router.query.search.trim().toLowerCase()
+      : '';
+
   const [filteredInternships, setfilteredInternships] = useState<any>([]);
   const [isFiltervisible, setisFiltervisible] = useState(false);
+
   const [filter, setfilters] = useState({
-    category: "",
-    location: "",
+    category: '',
+    location: '',
     workFromHome: false,
     partTime: false,
     stipend: 50,
   });
-  const [internshipData,setinternship]=useState<any>([])
+
+  const [internshipData, setinternship] = useState<any>([]);
   useEffect(()=>{
     const fetchdata=async()=>{
       try {
