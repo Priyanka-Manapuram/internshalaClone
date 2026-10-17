@@ -181,7 +181,7 @@ export default function SubscriptionPage() {
       }
     } catch (error: any) {
       if (error?.response?.status === 403) {
-        toast.error("Payments only allowed between 10:00 AM – 11:00 AM IST.");
+        toast.error("Payments only allowed between 9:00 AM – 8:00 PM IST.");
       } else {
         toast.error("Could not initiate payment. Try again.");
       }

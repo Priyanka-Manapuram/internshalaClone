@@ -25,8 +25,8 @@ function isPaymentAllowed() {
   const hours = istTime.getUTCHours();
   const minutes = istTime.getUTCMinutes();
   const totalMinutes = hours * 60 + minutes;
-  const start = 10 * 60; // 10:00 AM
-  const end = 11 * 60;
+  const start = 9 * 60; // 10:00 AM
+  const end = 20 * 60;
   return totalMinutes >= start && totalMinutes < end;
 }
 
@@ -63,7 +63,7 @@ router.post("/create-order", async (req, res) => {
     if (!isPaymentAllowed()) {
       return res.status(403).json({
         success: false,
-        message: "Payments are only allowed between 10:00 AM and 11:00 AM IST.",
+        message: "Payments are only allowed between 9:00 AM and 8:00 PM IST.",
       });
     }
 
