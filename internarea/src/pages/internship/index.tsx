@@ -36,6 +36,11 @@ import React, { useEffect, useState } from 'react'
 //   },
 // ];
 const index=()=>{
+  const searchQuery =
+  typeof router.query.search === 'string'
+    ? router.query.search.trim().toLowerCase()
+    : '';
+  };
   const [filteredInternships, setfilteredInternships] = useState<any>([]);
   const [isFiltervisible, setisFiltervisible] = useState(false);
   const [filter, setfilters] = useState({
@@ -97,20 +102,16 @@ const index=()=>{
       }));
     };
     const clearFilters = () => {
-    setfilters({
-      category: "",
-      location: "",
-      workFromHome: false,
-      partTime: false,
-      stipend: 50,
-    });
-    const router = useRouter();
+  setfilters({
+    category: '',
+    location: '',
+    workFromHome: false,
+    partTime: false,
+    stipend: 50,
+  });
+};
 
-const searchQuery =
-  typeof router.query.search === 'string'
-    ? router.query.search.trim().toLowerCase()
-    : '';
-  };
+
 
   return (
   <div className="min-h-screen bg-gray-50">
